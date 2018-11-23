@@ -1,13 +1,13 @@
 package com.whv.util;
 
 
-import org.apache.commons.io.FileUtils;
+import org.apache.log4j.Logger;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,51 +22,54 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class CrackWhv {
 
-    private static Logger LOGGER = LoggerFactory.getLogger(CrackWhv.class);
+    private static Logger LOGGER = Logger.getLogger(CrackWhv.class);
 
     private static final String LOGIN_URL = "https://online.vfsglobal.com/Global-Appointment/Account/RegisteredLogin";
 
     public static void main(String[] args) throws Exception {
         List<Map<String, String>> applicants = loadApplicant("/Users/gonglongmin/ij_workspace/gonglongmin/s-cross-whv/applicants.txt");
-
         ForkJoinPool forkJoinPool = new ForkJoinPool(10);
         forkJoinPool.submit(() ->
                 applicants.parallelStream().forEach(applicant -> {
-                    AtomicInteger currentStep = new AtomicInteger(0);
+                    AtomicInteger currentStep = new AtomicInteger(1);
                     Connection.Response currentResponse = null;
-                    while (currentStep.get() != 4) {
+                    while (currentStep.get() != 5) {
                         try {
                             if (currentStep.get() == 0) {
                                 Connection con = Jsoup.connect(LOGIN_URL);// 获取连接
                                 con.header("User-Agent",
                                         "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:29.0) Gecko/20100101 Firefox/29.0");
-                                Connection.Response rs = con.timeout(500 * 1000).execute();
-                                Map<String, String> loginFormData = LoginAction.getDataSet(rs);
-
-                                Connection.Response afterLogin = LoginAction.submitLoginAction(loginFormData, rs);
+                                Connection.Response loginResponse = con.timeout(ScheduleAppointment.TIME_OUT).execute();
                                 currentStep.set(1);
-                                currentResponse = afterLogin;
+                                currentResponse = loginResponse;
                             }
                             if (currentStep.get() == 1) {
-                                Connection.Response afterSelectCenter = ScheduleAppointment.submitSelectCenter(currentResponse, applicant.get("Location").toLowerCase()); //TODO location needs to be provided.
+                                Map<String, String> loginFormData = LoginAction.getDataSet(currentResponse);
+
+                                Connection.Response afterLogin = LoginAction.submitLoginAction(loginFormData, currentResponse);
                                 currentStep.set(2);
-                                currentResponse = afterSelectCenter;
+                                currentResponse = afterLogin;
                             }
                             if (currentStep.get() == 2) {
-                                // This step can be skipped.
-                                Connection.Response afterAddApplicant = ScheduleAppointment.submitAddApplicant(currentResponse, applicant); // TODO  need customers personal information, detailed fields see function: submitAddApplicant
+                                Connection.Response afterSelectCenter = ScheduleAppointment.submitSelectCenter(currentResponse, applicant.get("Location").toLowerCase()); //TODO location needs to be provided.
                                 currentStep.set(3);
-                                currentResponse = afterAddApplicant;
+                                currentResponse = afterSelectCenter;
                             }
                             if (currentStep.get() == 3) {
+                                // This step can be skipped.
+                                Connection.Response afterAddApplicant = ScheduleAppointment.submitAddApplicant(currentResponse, applicant); // TODO  need customers personal information, detailed fields see function: submitAddApplicant
+                                currentStep.set(4);
+                                currentResponse = afterAddApplicant;
+                            }
+                            if (currentStep.get() == 4) {
                                 // This step can pass afterSelectCenter or afterAddApplicant
                                 Connection.Response afterSubmitApplicantList = ScheduleAppointment.submitApplicantList(currentResponse);
-                                currentStep.set(4);
+                                currentStep.set(5);
                                 currentResponse = afterSubmitApplicantList;
 
                             }
                         } catch (Exception e) {
-                            LOGGER.error(String.format("[ %s %s ] step [%d] error, retry...", applicant.get("FirstName"), applicant.get("LastName"), currentStep.get()));
+                            LOGGER.error(String.format("[ %s %s ] step [%d] error, retry...", applicant.get("FirstName"), applicant.get("LastName"), currentStep.get()), e);
                         }
                     }
                 })
@@ -113,28 +116,30 @@ public class CrackWhv {
 
     private static List<Map<String, String>> loadApplicant(String path) {
         List<Map<String, String>> applicantList = new ArrayList<>();
-        try {
-            List<String> list = FileUtils.readLines(new File(path), "UTF-8");
-            list.stream().filter(line -> !line.startsWith("#")).forEach(line -> {
-                Map<String, String> applicantInfo = new HashMap<>();
-                String[] columns = line.trim().split(",");
-                applicantInfo.put("FirstName", columns[0].trim());
-                applicantInfo.put("LastName", columns[1].trim());
-                applicantInfo.put("PassportNumber", columns[2].trim());
-                applicantInfo.put("DateOfBirth", columns[3].trim());
-                applicantInfo.put("PassportExpiryDate", columns[4].trim());
-                if (columns[5].trim().equalsIgnoreCase("female")) {
-                    applicantInfo.put("GenderId", "2");
-                } else if (columns[5].trim().equalsIgnoreCase("male")) {
-                    applicantInfo.put("GenderId", "1");
+        try (BufferedReader br = new BufferedReader(new FileReader(new File(path)))) {
+            String line = "";
+            while ((line = br.readLine()) != null) {
+                if (!line.startsWith("#")) {
+                    Map<String, String> applicantInfo = new HashMap<>();
+                    String[] columns = line.trim().split(",");
+                    applicantInfo.put("FirstName", columns[0].trim());
+                    applicantInfo.put("LastName", columns[1].trim());
+                    applicantInfo.put("PassportNumber", columns[2].trim());
+                    applicantInfo.put("DateOfBirth", columns[3].trim());
+                    applicantInfo.put("PassportExpiryDate", columns[4].trim());
+                    if (columns[5].trim().equalsIgnoreCase("female")) {
+                        applicantInfo.put("GenderId", "2");
+                    } else if (columns[5].trim().equalsIgnoreCase("male")) {
+                        applicantInfo.put("GenderId", "1");
 
+                    }
+                    applicantInfo.put("DialCode", columns[6].trim());
+                    applicantInfo.put("Mobile", columns[7].trim());
+                    applicantInfo.put("EmailId", columns[8].trim());
+                    applicantInfo.put("Location", columns[9].trim());
+                    applicantList.add(applicantInfo);
                 }
-                applicantInfo.put("DialCode", columns[6].trim());
-                applicantInfo.put("Mobile", columns[7]).trim();
-                applicantInfo.put("EmailId", columns[8].trim());
-                applicantInfo.put("Location", columns[9].trim());
-                applicantList.add(applicantInfo);
-            });
+            }
 
         } catch (IOException e) {
             e.printStackTrace();

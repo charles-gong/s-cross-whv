@@ -13,7 +13,7 @@ import java.util.Map;
  */
 public class ScheduleAppointment {
 
-    private static final int TIME_OUT = 30 * 1000;
+    public static final int TIME_OUT = 5 * 60 * 1000; // 5 mins
 
     private static final Map<String, Integer> locationMapping = new HashMap<String, Integer>() {{
         put("guangzhou", 161);
