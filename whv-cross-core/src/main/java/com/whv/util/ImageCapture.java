@@ -8,39 +8,50 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
+import java.util.UUID;
+import java.util.stream.IntStream;
 
 public class ImageCapture {
 
 
-    public static void main(String[] args) throws Exception {
-        // Step1 refresh
-        Connection connection = Jsoup.connect("https://online.vfsglobal.com/Global-Appointment/DefaultCaptcha/Refresh");
-        connection.header("Accept-Encoding", "gzip, deflate, br");
-        connection.header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7");
-        connection.header("Connection", "keep-alive");
-        connection.header("Cookie", ".ASPXFORMSAUTH=97F2E43D02AB3652DA04364D86D6260B6159CB5F60C2A373019BAAB6BB34CD531AA050453591C1F71BAA0C9F9472BAB70FA785EA7B5304A2DE74DC8E551EE835EE296A010A1EC74ECC233F2EA39AF540CDE2CFB4B1F777706A195364533EE1DCFBC4620DA4E2EDCCA3D112409B970C2B051C33FF8729B2C905633192EBA920A4052033F2994734EA7D6B38F4A404A17049B92470F620DBED0D9CDAD06711EB841EEB1FD6464AEC5756041C005D0F456936D17A75752F25FAC87ADEB6A0AAD4D0EEDFD6033664DA07FD82BA5AB49D2BA65D2621327717ECADD3C0B11FA5BF8AA416CEC8EE44783E3F33096F6E1171A0F8E99E17D5B85CBE5EBC7C8A50C06B2F48AD5F9C30A54ED2B9D3D957F480120AAED1EBC5A539D5D4B9AE0378A36578B44E28285B02ABC502669F11D2A70ACCC6EB2BB675C48C909E530BACFFEB993714D2C0D9AF0EE8F78F75995F06466D24A93C7992D08754191D22352260FB0F846B5E84FA58776A317E28351B7966156B6A8CE58D4F2F68BCA66C9D3580D6CA2A8AD19E593AAEAD15B128559190DF03A1BAE67110F26BDE2AFBCC90FA0CFE44BD0F5E3220657F3F82CAF45693CC1CB916060909C058C09081095910566ACA11FD2E8ED7B3848BB7D2E932DED687B5828DEFBEE9D5E8C628F3F92F9AC678737A21458133F8626E191A7D2CB5E27460BDB5AC44F3BDA1E737DFB16912567121DC0CCE65D5D434D9481C127D58B6BE3EB344B9C5153869B7D2A1645374489F9F13C329C512B7F4DF724409CDFB0FFFD7FDE2A73EF4D2145A21987F3E25A6E7919D2674FA2B3F1EBEA8B7735F226F037BEDEC33C2C0D9A6B8BA2F55B4F506EE068569614DC49D1DE2CBC03FCCBE48AAE169F12436A6C49EAB1412FD5C4D1225AAEE830A467BDAFABC167472098C86FA25175B4B4B858C2E3211229125D9C1C1E0E1EE354FC1A3A7C00D1CBB14042F8E5CF7E262DF2A382BBC3C235E5ECF9CA8F93D0FC6C5128865B9A32DE9B431F2456D96030B79923B90DCACF97F3495E9E57FF9979991430760202A47A30F525AB70EFA5D46A4353E309A2EEB1E4AA17A2737A768A67E1DCCA204786C4F3E5CD6DBEC586F14AC2FD3EA24; _ga=GA1.2.815269254.1542635131; _gid=GA1.2.151288621.1542635131; ASP.NET_SessionId=v1thscnbkdite0xzga40jbzp; __RequestVerificationToken_L0dsb2JhbC1BcHBvaW50bWVudA2=z4yf5ZZ_DB6g6R0KqZs1OubBidbjMYmvmwPJf5RCAgFg7JXuXHlBbB37q7-lsVCsl9Mlfh31ps6G1PDuNujP6WN2wEY1; BIGipServerCUST100052_wynvfsrowtweb443=rd1615o00000000000000000000ffff1eb8cb1eo443; _culture=en-US; _Role=Individual");
-        connection.header("HOST", "online.vfsglobal.com");
-        connection.header("Referer", "https://online.vfsglobal.com/Global-Appointment");
-        connection.header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36");
-        Connection.Response res = connection.ignoreContentType(true).data("t","fd891f53ee2141089cc86e93a5c728ca").timeout(500000).method(Connection.Method.POST).execute();
-        String url = "https://online.vfsglobal.com"+Jsoup.parse(res.body()).select("#CaptchaImage").attr("src");
+    public static void main(String[] args){
+        StringBuffer stringBuffer  = new StringBuffer("2e34d64b823c4731bd1b8110746a9ed2");
+        IntStream.range(1,30).forEach(i->{
+            try {
+                // Step1 refresh
+                Connection connection = Jsoup.connect("https://online.vfsglobal.com/Global-Appointment/DefaultCaptcha/Refresh");
+                connection.header("Accept-Encoding", "gzip, deflate, br");
+                connection.header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7");
+                connection.header("Connection", "keep-alive");
+                connection.header("Cookie", "_ga=GA1.2.815269254.1542635131; ASP.NET_SessionId=2jx5vzxlw0tigatrnx5npfda; __RequestVerificationToken_L0dsb2JhbC1BcHBvaW50bWVudA2=j19Fk2oWnWdnGayPMczbGJ3nLqv7S74EpV7PAW-DhMFc3BGRCXj7tWmtrh9-IMzl98mUroURCIVZdXagE6_GV2R8zm01; BIGipServerCUST100052_wynvfsrowtweb443=rd1615o00000000000000000000ffff1eb8cb2do443; _gid=GA1.2.526368041.1543124942; _culture=en-US; _gat=1");
+                connection.header("HOST", "online.vfsglobal.com");
+                connection.header("Referer", "https://online.vfsglobal.com/Global-Appointment");
+                connection.header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36");
+                Connection.Response res = connection.ignoreContentType(true).data("t", stringBuffer.toString()).timeout(500000).method(Connection.Method.POST).execute();
+                String url = "https://online.vfsglobal.com" + Jsoup.parse(res.body()).select("#CaptchaImage").attr("src");
 
-        Connection connection2 = Jsoup.connect(url);
+                Connection connection2 = Jsoup.connect(url);
 //        connection.header("Accept", "image/webp,image/apng,image/*,*/*;q=0.8");
 //        connection.header("Content-Type","text/*,image/gif");
-        connection2.header("Accept-Encoding", "gzip, deflate, br");
-        connection2.header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7");
-        connection2.header("Connection", "keep-alive");
-        connection2.header("Cookie", ".ASPXFORMSAUTH=97F2E43D02AB3652DA04364D86D6260B6159CB5F60C2A373019BAAB6BB34CD531AA050453591C1F71BAA0C9F9472BAB70FA785EA7B5304A2DE74DC8E551EE835EE296A010A1EC74ECC233F2EA39AF540CDE2CFB4B1F777706A195364533EE1DCFBC4620DA4E2EDCCA3D112409B970C2B051C33FF8729B2C905633192EBA920A4052033F2994734EA7D6B38F4A404A17049B92470F620DBED0D9CDAD06711EB841EEB1FD6464AEC5756041C005D0F456936D17A75752F25FAC87ADEB6A0AAD4D0EEDFD6033664DA07FD82BA5AB49D2BA65D2621327717ECADD3C0B11FA5BF8AA416CEC8EE44783E3F33096F6E1171A0F8E99E17D5B85CBE5EBC7C8A50C06B2F48AD5F9C30A54ED2B9D3D957F480120AAED1EBC5A539D5D4B9AE0378A36578B44E28285B02ABC502669F11D2A70ACCC6EB2BB675C48C909E530BACFFEB993714D2C0D9AF0EE8F78F75995F06466D24A93C7992D08754191D22352260FB0F846B5E84FA58776A317E28351B7966156B6A8CE58D4F2F68BCA66C9D3580D6CA2A8AD19E593AAEAD15B128559190DF03A1BAE67110F26BDE2AFBCC90FA0CFE44BD0F5E3220657F3F82CAF45693CC1CB916060909C058C09081095910566ACA11FD2E8ED7B3848BB7D2E932DED687B5828DEFBEE9D5E8C628F3F92F9AC678737A21458133F8626E191A7D2CB5E27460BDB5AC44F3BDA1E737DFB16912567121DC0CCE65D5D434D9481C127D58B6BE3EB344B9C5153869B7D2A1645374489F9F13C329C512B7F4DF724409CDFB0FFFD7FDE2A73EF4D2145A21987F3E25A6E7919D2674FA2B3F1EBEA8B7735F226F037BEDEC33C2C0D9A6B8BA2F55B4F506EE068569614DC49D1DE2CBC03FCCBE48AAE169F12436A6C49EAB1412FD5C4D1225AAEE830A467BDAFABC167472098C86FA25175B4B4B858C2E3211229125D9C1C1E0E1EE354FC1A3A7C00D1CBB14042F8E5CF7E262DF2A382BBC3C235E5ECF9CA8F93D0FC6C5128865B9A32DE9B431F2456D96030B79923B90DCACF97F3495E9E57FF9979991430760202A47A30F525AB70EFA5D46A4353E309A2EEB1E4AA17A2737A768A67E1DCCA204786C4F3E5CD6DBEC586F14AC2FD3EA24; _ga=GA1.2.815269254.1542635131; _gid=GA1.2.151288621.1542635131; ASP.NET_SessionId=v1thscnbkdite0xzga40jbzp; __RequestVerificationToken_L0dsb2JhbC1BcHBvaW50bWVudA2=z4yf5ZZ_DB6g6R0KqZs1OubBidbjMYmvmwPJf5RCAgFg7JXuXHlBbB37q7-lsVCsl9Mlfh31ps6G1PDuNujP6WN2wEY1; BIGipServerCUST100052_wynvfsrowtweb443=rd1615o00000000000000000000ffff1eb8cb1eo443; _culture=en-US; _Role=Individual");
-        connection2.header("HOST", "online.vfsglobal.com");
-        connection2.header("Referer", "https://online.vfsglobal.com/Global-Appointment");
-        connection2.header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36");
-        Connection.Response res2 = connection2.ignoreContentType(true).timeout(500000).method(Connection.Method.GET).execute();
+                connection2.header("Accept-Encoding", "gzip, deflate, br");
+                connection2.header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7");
+                connection2.header("Connection", "keep-alive");
+                connection2.header("Cookie", "_ga=GA1.2.815269254.1542635131; ASP.NET_SessionId=2jx5vzxlw0tigatrnx5npfda; __RequestVerificationToken_L0dsb2JhbC1BcHBvaW50bWVudA2=j19Fk2oWnWdnGayPMczbGJ3nLqv7S74EpV7PAW-DhMFc3BGRCXj7tWmtrh9-IMzl98mUroURCIVZdXagE6_GV2R8zm01; BIGipServerCUST100052_wynvfsrowtweb443=rd1615o00000000000000000000ffff1eb8cb2do443; _gid=GA1.2.526368041.1543124942; _culture=en-US; _gat=1");
+                connection2.header("HOST", "online.vfsglobal.com");
+                connection2.header("Referer", "https://online.vfsglobal.com/Global-Appointment");
+                connection2.header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36");
+                Connection.Response res2 = connection2.ignoreContentType(true).timeout(500000).method(Connection.Method.GET).execute();
 
-        byte[] bytes = res2.bodyAsBytes();
-        InputStream buffin = new ByteArrayInputStream(bytes, 0, bytes.length);
-        BufferedImage img = ImageIO.read(buffin);
-        File outputfile = new File("/Users/gonglongmin/ij_workspace/gonglongmin/s-cross-whv/saved.png");
-        ImageIO.write(img, "png", outputfile);
+                byte[] bytes = res2.bodyAsBytes();
+                InputStream buffin = new ByteArrayInputStream(bytes, 0, bytes.length);
+                BufferedImage img = ImageIO.read(buffin);
+                File outputfile = new File("/Users/gonglongmin/ij_workspace/gonglongmin/s-cross-whv/whv-cross-core/src/main/resources/" + UUID.randomUUID() + ".png");
+                ImageIO.write(img, "png", outputfile);
+                System.out.println("current [ "+i+" ] stored!!");
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+        });
+
     }
 }
