@@ -31,22 +31,20 @@ public class CrackWhv {
         ForkJoinPool forkJoinPool = new ForkJoinPool(10);
         forkJoinPool.submit(() ->
                 applicants.parallelStream().forEach(applicant -> {
-                    AtomicInteger currentStep = new AtomicInteger(1);
+                    AtomicInteger currentStep = new AtomicInteger(0);
                     Connection.Response currentResponse = null;
                     while (currentStep.get() != 5) {
                         try {
                             if (currentStep.get() == 0) {
                                 Connection con = Jsoup.connect(LOGIN_URL);// 获取连接
-                                con.header("User-Agent",
-                                        "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:29.0) Gecko/20100101 Firefox/29.0");
-                                Connection.Response loginResponse = con.timeout(ScheduleAppointment.TIME_OUT).execute();
+                                con.header("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:29.0) Gecko/20100101 Firefox/29.0");
+                                con.header("Connection", "keep-alive");
+                                Connection.Response pageResponse = con.timeout(ScheduleAppointment.TIME_OUT).execute();
                                 currentStep.set(1);
-                                currentResponse = loginResponse;
+                                currentResponse = pageResponse;
                             }
                             if (currentStep.get() == 1) {
-                                Map<String, String> loginFormData = LoginAction.getDataSet(currentResponse);
-
-                                Connection.Response afterLogin = LoginAction.submitLoginAction(loginFormData, currentResponse);
+                                Connection.Response afterLogin = LoginAction.submitLoginAction(currentResponse);
                                 currentStep.set(2);
                                 currentResponse = afterLogin;
                             }
