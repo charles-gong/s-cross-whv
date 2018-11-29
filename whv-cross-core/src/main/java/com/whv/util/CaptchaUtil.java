@@ -293,7 +293,7 @@ public class CaptchaUtil {
         return bArray;
     }
     public static String MFPost(URL url,byte[] img_data,String stm,String pd_id,String sign,String app_id,String asign,String pred_type) throws Exception {
-    	String boundary = "--" + CaptchaUtil.CalcMd5(stm);
+        String boundary = "--" + CaptchaUtil.CalcMd5(stm);
         String boundarybytes_string = "--" + boundary + "\r\n";
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestMethod("POST");
@@ -302,17 +302,17 @@ public class CaptchaUtil {
         con.setDoInput(true);
         con.setUseCaches(true);
         con.setRequestProperty("Content-Type",
-				"multipart/form-data; boundary=" + boundary);
+                "multipart/form-data; boundary=" + boundary);
         OutputStream out    = con.getOutputStream();
         String item_string  = boundarybytes_string + "Content-Disposition: form-data;name=\"";
         String param_string = item_string + "user_id\"\r\n\r\n" + pd_id + "\r\n"
-        		+ item_string + "timestamp\"\r\n\r\n" + stm + "\r\n" 
-        		+ item_string + "sign\"\r\n\r\n" + sign + "\r\n"
-        		+ item_string + "predict_type\"\r\n\r\n" + pred_type + "\r\n"
-        		+ item_string + "up_type\"\r\n\r\nmt\r\n";
+                + item_string + "timestamp\"\r\n\r\n" + stm + "\r\n"
+                + item_string + "sign\"\r\n\r\n" + sign + "\r\n"
+                + item_string + "predict_type\"\r\n\r\n" + pred_type + "\r\n"
+                + item_string + "up_type\"\r\n\r\nmt\r\n";
         if(!app_id.isEmpty()){
             param_string  += item_string + "appid\"\r\n\r\n" + app_id + "\r\n"
-        		+ item_string + "asign\"\r\n\r\n" + asign + "\r\n";
+                    + item_string + "asign\"\r\n\r\n" + asign + "\r\n";
         }
         String file_strig = item_string + "img_data\";filename=\"image.jpg\"\r\nContent-Type: image/jpg\r\n\r\n";
         String end_string = "\r\n--" + boundary + "--\r\n";
@@ -323,30 +323,30 @@ public class CaptchaUtil {
         // System.out.println(out.toString());
         out.flush();
         out.close();
- 
+
         StringBuffer buffer = new StringBuffer();
         BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream(), "UTF-8"));
         String temp;
         while((temp = br.readLine()) != null) {
-        	buffer.append(temp);
-        	buffer.append("\n");
+            buffer.append(temp);
+            buffer.append("\n");
         }
         return buffer.toString().trim();
-	}
+    }
     public static byte[] GetUrlImage(String str_url) throws IOException {
-    	URL url = new URL(str_url);
-    	URLConnection con = url.openConnection();
-		con.setConnectTimeout(30000);
-		InputStream is = con.getInputStream();
-		byte[] buff = new byte[128];
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		int rc = 0;
-		while((rc = is.read(buff, 0, 128)) > 0 ) {
-			baos.write(buff,0,rc);
-		}
-		byte[] img_data = baos.toByteArray();
-		return img_data;
-	}
+        URL url = new URL(str_url);
+        URLConnection con = url.openConnection();
+        con.setConnectTimeout(30000);
+        InputStream is = con.getInputStream();
+        byte[] buff = new byte[128];
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        int rc = 0;
+        while((rc = is.read(buff, 0, 128)) > 0 ) {
+            baos.write(buff,0,rc);
+        }
+        byte[] img_data = baos.toByteArray();
+        return img_data;
+    }
     public static String HttpPost(String url, String params){
         PrintWriter out = null;
         BufferedReader in = null;
