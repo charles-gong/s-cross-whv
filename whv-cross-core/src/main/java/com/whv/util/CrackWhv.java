@@ -27,7 +27,7 @@ public class CrackWhv {
     private static final String LOGIN_URL = "https://online.vfsglobal.com/Global-Appointment/Account/RegisteredLogin";
 
     public static void main(String[] args) throws Exception {
-        List<Map<String, String>> applicants = loadApplicant("/Users/gonglongmin/ij_workspace/gonglongmin/s-cross-whv/applicants.txt");
+        List<Map<String, String>> applicants = loadApplicant("/Users/c/Software/IdeaProjects/gonglongmin/s-cross-whv/applicants.txt");
         ForkJoinPool forkJoinPool = new ForkJoinPool(10);
         forkJoinPool.submit(() ->
                 applicants.parallelStream().forEach(applicant -> {

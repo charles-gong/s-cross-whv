@@ -4,8 +4,6 @@ import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
-import javax.imageio.ImageIO;
-import javax.imageio.stream.FileImageOutputStream;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -13,6 +11,8 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import javax.imageio.ImageIO;
 
 /**
  * Created by gonglongmin on 2018/11/21.
@@ -38,7 +38,7 @@ public class LoginAction {
         try {
             InputStream buffin = new ByteArrayInputStream(userfile, 0, userfile.length);
             BufferedImage img = ImageIO.read(buffin);
-            File outputfile = new File("/Users/gonglongmin/ij_workspace/gonglongmin/s-cross-whv/whv-cross-core/src/main/resources/" + UUID.randomUUID() + ".png");
+            File outputfile = new File("/Users/c/Software/IdeaProjects/gonglongmin/s-cross-whv/whv-cross-core/src/main/resources/" + UUID.randomUUID() + ".png");
             ImageIO.write(img, "png", outputfile);
         } catch (Exception ex) {
             System.out.println("Exception: " + ex);
@@ -49,10 +49,9 @@ public class LoginAction {
             throw new RuntimeException("Exception");
         }
 
-        Map<String, Object> userfileMap = new HashMap<>();
-        userfileMap.put("userfile", userfile);
-        String captchaInputText = RequestCaptcha.postForCaptcha(userfileMap);
+        String captchaInputText = RequestCaptcha.PostPic(userfile);
         dataMap.put("CaptchaInputText", captchaInputText);
+
         Connection connection = Jsoup.connect(LOGIN_URL);
         connection.header("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:29.0) Gecko/20100101 Firefox/29.0");
         connection.header("Connection", "keep-alive");

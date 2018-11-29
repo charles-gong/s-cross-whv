@@ -37,7 +37,7 @@ public class ImageCapture {
         Connection.Response res = connection.ignoreContentType(true).data("t", t).timeout(500000).method(Connection.Method.POST).execute();
         String url = "https://online.vfsglobal.com" + Jsoup.parse(res.body()).select("#CaptchaImage").attr("src");
 
-        return getCaptchaImage(res.cookies(), url);
+        return getCaptchaImage(cookies, url);
     }
 
 
