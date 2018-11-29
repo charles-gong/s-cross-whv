@@ -27,7 +27,7 @@ public class CrackWhv {
     private static final String LOGIN_URL = "https://online.vfsglobal.com/Global-Appointment/Account/RegisteredLogin";
 
     public static void main(String[] args) throws Exception {
-        List<Map<String, String>> applicants = loadApplicant("/Users/c/Software/IdeaProjects/gonglongmin/s-cross-whv/applicants.txt");
+        List<Map<String, String>> applicants = loadApplicant("/Users/gonglongmin/ij_workspace/gonglongmin/s-cross-whv/applicants.txt");
         ForkJoinPool forkJoinPool = new ForkJoinPool(10);
         forkJoinPool.submit(() ->
                 applicants.parallelStream().forEach(applicant -> {
@@ -45,6 +45,13 @@ public class CrackWhv {
                             }
                             if (currentStep.get() == 1) {
                                 Connection.Response afterLogin = LoginAction.submitLoginAction(currentResponse);
+                                String content = Jsoup.parse(afterLogin.body()).toString();
+                                while (content.contains("Your account has been locked, please login after 2 minutes")) {
+                                    LOGGER.error("Sleep 2 mins, account is locked.");
+                                    Thread.sleep(2 * 60 * 1001); // sleep 2mins
+                                    afterLogin = LoginAction.submitLoginAction(currentResponse);
+                                    content = Jsoup.parse(afterLogin.body()).toString();
+                                }
                                 currentStep.set(2);
                                 currentResponse = afterLogin;
                             }
@@ -72,7 +79,6 @@ public class CrackWhv {
                     }
                 })
         ).get();
-
     }
 
     /**
