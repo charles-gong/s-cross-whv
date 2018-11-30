@@ -53,7 +53,7 @@ public class ScheduleAppointment {
         headers.put("Referer", submitUrl);
 
         Connection connection = Jsoup.connect("https://online.vfsglobal.com/Global-Appointment/Home/SelectVAC");
-        formDataMap.put(" paraMissionId", "22");
+        formDataMap.put("paraMissionId", "22");
         formDataMap.put("paramCountryId", "11");
         formDataMap.put("masterMissionName", "Australia");
         formDataMap.put("masterCountryName", "China");
