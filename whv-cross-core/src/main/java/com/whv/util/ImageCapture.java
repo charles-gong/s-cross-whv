@@ -1,6 +1,6 @@
 package com.whv.util;
 
-import org.apache.logging.log4j.util.Strings;
+import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 
@@ -40,7 +40,7 @@ public class ImageCapture {
         connection.header("Referer", "https://online.vfsglobal.com/Global-Appointment/Account/RegisteredLogin");
         List<String> c = new ArrayList<>();
         cookies.forEach((k, v) -> c.add(k.concat("=").concat(v)));
-        connection.header("Cookie", "_ga=GA1.2.815269254.1542635131;".concat(Strings.join(c, ';')).concat(";_gid=GA1.2.526368041.1543124942; _gat=1"));
+        connection.header("Cookie", "_ga=GA1.2.815269254.1542635131;".concat(StringUtils.join(c, ';')).concat(";_gid=GA1.2.526368041.1543124942; _gat=1"));
         Connection.Response res2 = connection.ignoreContentType(true).timeout(500000).method(Connection.Method.GET).execute();
 
         byte[] bytes = res2.bodyAsBytes();

@@ -1,12 +1,17 @@
 package com.whv.util;
 
+import com.gargoylesoftware.htmlunit.WebClient;
+import com.gargoylesoftware.htmlunit.html.*;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Created by gonglongmin on 2018/11/21.
@@ -33,48 +38,88 @@ public class ScheduleAppointment {
 
     private static final String APPLICANT_LIST_POST = "https://online.vfsglobal.com/Global-Appointment/Applicant/ApplicantList";
 
-    public static Connection.Response submitSelectCenter(Connection.Response loginResponse, String location) throws Exception {
-        Map<String, String> formDataMap = new HashMap<>();
+    public static HtmlPage submitSelectCenter(HtmlPage loginResponse, WebClient webClient, String location) throws Exception {
+        /*
+         SetMissionAndCountry :: https://online.vfsglobal.com/Global-Appointment/Account/SetMissionAndCountry :: POST
+         */
+//        Connection setMissionAndCountryConnection = Jsoup.connect("https://online.vfsglobal.com/Global-Appointment/Account/SetMissionAndCountry");
+//        setMissionAndCountryHeaders.put("Accept", "application/json, text/javascript, */*; q=0.01");
+//        setMissionAndCountryHeaders.put("Accept-Encoding", "gzip, deflate, br");
+//        setMissionAndCountryHeaders.put("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7");
+//        setMissionAndCountryHeaders.put("Connection", "keep-alive");
+//        setMissionAndCountryHeaders.put("Origin", "https://online.vfsglobal.com");
+//        setMissionAndCountryHeaders.put("Referer", "https://online.vfsglobal.com/Global-Appointment");
+//        Connection.Response setMissionAndCountryResponse = setMissionAndCountryConnection.ignoreContentType(true).method(Connection.Method.POST).timeout(TIME_OUT)
+//                .headers(setMissionAndCountryHeaders)
+//                .execute();
+//        System.out.println(Jsoup.parse(setMissionAndCountryResponse.body()));
 
-        String submitUrl = "https://online.vfsglobal.com" + Jsoup.parse(loginResponse.body()).select(".inactive-link").first().children().first().attr("href");
 
-//        Document html = Jsoup.parse(loginResponse.body());
-//        html.select("#VisaApplicationForm").get(0).select("input[type=hidden]").forEach(element -> {
-//                    if (element.attr("value") != null && element.attr("value").length() > 0)
-//                        formDataMap.put(element.attr("name"), element.attr("value"));
-//                }
-//        );
-        Map<String, String> headers = LoginAction.getCurrentHeaders(loginResponse.cookies());
-        headers.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8");
-        headers.put("Accept-Encoding", "gzip, deflate, br");
-        headers.put("Content-Type", "application/x-www-form-urlencoded");
-        headers.put("Host", "online.vfsglobal.com");
-        headers.put("Origin", "https://online.vfsglobal.com");
-        headers.put("Referer", submitUrl);
+        /*
+        https://online.vfsglobal.com/Global-Appointment/Home/SelectVAC?q=xxxxx
+         */
+//        Map<String, String> formDataMap = new HashMap<>();
+//        String selectVACUrl = "https://online.vfsglobal.com" + Jsoup.parse(loginResponse.body()).select(".inactive-link").first().children().first().attr("href");
+//
+//        // 设置cookie和post上面的map数据
+//        Map<String, String> selectVACHeaders = LoginAction.getCurrentHeaders(loginResponse.cookies());
+//        selectVACHeaders.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8");
+//        selectVACHeaders.put("Accept-Encoding", "gzip, deflate, br");
+//        selectVACHeaders.put("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7");
+//        selectVACHeaders.put("Referer", "https://online.vfsglobal.com/Global-Appointment");
+//        selectVACHeaders.put("Connection", "keep-alive");
+//        selectVACHeaders.put("Origin", "https://online.vfsglobal.com");
+//        selectVACHeaders.put("Upgrade-Insecure-Requests", "1");
+//        Connection setConnection = Jsoup.connect(selectVACUrl);
+//        Connection.Response selectVACResponse = setConnection.ignoreContentType(true).method(Connection.Method.POST)
+//                .timeout(TIME_OUT)
+//                .headers(selectVACHeaders)
+//                .execute();
 
-        Connection connection = Jsoup.connect("https://online.vfsglobal.com/Global-Appointment/Home/SelectVAC");
-        formDataMap.put(" paraMissionId", "22");
-        formDataMap.put("paramCountryId", "11");
-        formDataMap.put("masterMissionName", "Australia");
-        formDataMap.put("masterCountryName", "China");
-        formDataMap.put("IsApplicationTypeEnabled", "False");
-        formDataMap.put("MainVisaCategoryDisplayEnabled", "False");
-        formDataMap.put("MissionId", "22");
-        formDataMap.put("CountryId", "11");
-        formDataMap.put("MissionCountryLocationJSON", "[{\"Id\":0,\"Name\":\"Select Visiting Country\",\"CountryJEs\":null,\"ChildMissionJEs\":null},{\"Id\":22,\"Name\":\"Australia\",\"CountryJEs\":[{\"Locations\":null,\"ShowDocumentCheckList\":false,\"MissionId\":0,\"VisaCategories\":null,\"Id\":0,\"Name\":\"Select Residing Country\"},{\"Locations\":[{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"}],\"TypeId\":0,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":0,\"Name\":\"Select Centre\"},{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"},{\"SubVisaCategories\":null,\"Id\":419,\"Name\":\"Biometrics Enrolment\"},{\"SubVisaCategories\":null,\"Id\":418,\"Name\":\"General Visa\"}],\"TypeId\":1,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":161,\"Name\":\"Australia Visa Application Centre - Guangzhou\"},{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"},{\"SubVisaCategories\":null,\"Id\":419,\"Name\":\"Biometrics Enrolment\"},{\"SubVisaCategories\":null,\"Id\":418,\"Name\":\"General Visa\"}],\"TypeId\":1,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":160,\"Name\":\"Australia Visa Application Centre-Beijing\"},{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"},{\"SubVisaCategories\":null,\"Id\":419,\"Name\":\"Biometrics Enrolment\"},{\"SubVisaCategories\":null,\"Id\":418,\"Name\":\"General Visa\"},{\"SubVisaCategories\":null,\"Id\":416,\"Name\":\"Work and Holiday Visa\"}],\"TypeId\":1,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":163,\"Name\":\"Australia Visa Application Centre-Chengdu\"},{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"},{\"SubVisaCategories\":null,\"Id\":419,\"Name\":\"Biometrics Enrolment\"},{\"SubVisaCategories\":null,\"Id\":418,\"Name\":\"General Visa\"},{\"SubVisaCategories\":null,\"Id\":416,\"Name\":\"Work and Holiday Visa\"}],\"TypeId\":1,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":162,\"Name\":\"Australia Visa Application Centre-Shanghai\"}],\"ShowDocumentCheckList\":false,\"MissionId\":0,\"VisaCategories\":null,\"Id\":11,\"Name\":\"China\"}],\"ChildMissionJEs\":[{\"ParentMissionId\":0,\"Id\":0,\"Name\":\"Select Sub-Mission\"}]}]");
-        formDataMap.put("LocationId", locationMapping.get(location).toString());
-        formDataMap.put("VisaCategoryId", visaCategoryMapping.get("WHV").toString());
-        formDataMap.put("VisaCategoryId", "416");
-        formDataMap.put("AppointmentType", "PrimeAppointment");
-        formDataMap.put("MultiplePaymentModes", "PrepaymentAtBank");
-        // 设置cookie和post上面的map数据
-        Connection.Response afterSelectCenterResponse = connection.ignoreContentType(true).method(Connection.Method.POST)
-                .timeout(TIME_OUT)
-                .headers(headers)
-                .data(formDataMap)
-                .execute();
+        HtmlAnchor scheduleItem = (HtmlAnchor) loginResponse.getByXPath("//li[@class='inactive-link']/a").get(0);
+        HtmlPage selectCenterPage = scheduleItem.click();
 
-        return afterSelectCenterResponse;
+
+//        Connection submitSACForm = Jsoup.connect("https://online.vfsglobal.com/Global-Appointment/Home/SelectVAC");
+//        formDataMap.put("paraMissionId", "22");
+//        formDataMap.put("paramCountryId", "11");
+//        formDataMap.put("masterMissionName", "Australia");
+//        formDataMap.put("masterCountryName", "China");
+//        formDataMap.put("IsApplicationTypeEnabled", "False");
+//        formDataMap.put("MainVisaCategoryDisplayEnabled", "False");
+//        formDataMap.put("MissionId", "22");
+//        formDataMap.put("CountryId", "11");
+//        formDataMap.put("MissionCountryLocationJSON", "[{\"Id\":0,\"Name\":\"Select Visiting Country\",\"CountryJEs\":null,\"ChildMissionJEs\":null},{\"Id\":22,\"Name\":\"Australia\",\"CountryJEs\":[{\"Locations\":null,\"ShowDocumentCheckList\":false,\"MissionId\":0,\"VisaCategories\":null,\"Id\":0,\"Name\":\"Select Residing Country\"},{\"Locations\":[{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"}],\"TypeId\":0,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":0,\"Name\":\"Select Centre\"},{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"},{\"SubVisaCategories\":null,\"Id\":419,\"Name\":\"Biometrics Enrolment\"},{\"SubVisaCategories\":null,\"Id\":418,\"Name\":\"General Visa\"}],\"TypeId\":1,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":161,\"Name\":\"Australia Visa Application Centre - Guangzhou\"},{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"},{\"SubVisaCategories\":null,\"Id\":419,\"Name\":\"Biometrics Enrolment\"},{\"SubVisaCategories\":null,\"Id\":418,\"Name\":\"General Visa\"}],\"TypeId\":1,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":160,\"Name\":\"Australia Visa Application Centre-Beijing\"},{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"},{\"SubVisaCategories\":null,\"Id\":419,\"Name\":\"Biometrics Enrolment\"},{\"SubVisaCategories\":null,\"Id\":418,\"Name\":\"General Visa\"},{\"SubVisaCategories\":null,\"Id\":416,\"Name\":\"Work and Holiday Visa\"}],\"TypeId\":1,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":163,\"Name\":\"Australia Visa Application Centre-Chengdu\"},{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"},{\"SubVisaCategories\":null,\"Id\":419,\"Name\":\"Biometrics Enrolment\"},{\"SubVisaCategories\":null,\"Id\":418,\"Name\":\"General Visa\"},{\"SubVisaCategories\":null,\"Id\":416,\"Name\":\"Work and Holiday Visa\"}],\"TypeId\":1,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":162,\"Name\":\"Australia Visa Application Centre-Shanghai\"}],\"ShowDocumentCheckList\":false,\"MissionId\":0,\"VisaCategories\":null,\"Id\":11,\"Name\":\"China\"}],\"ChildMissionJEs\":[{\"ParentMissionId\":0,\"Id\":0,\"Name\":\"Select Sub-Mission\"}]}]");
+//        formDataMap.put("LocationId", locationMapping.get(location).toString());
+//        formDataMap.put("VisaCategoryId", visaCategoryMapping.get("WHV").toString());
+//        formDataMap.put("VisaCategoryId", "416");
+//        formDataMap.put("AppointmentType", "PrimeAppointment");
+//        formDataMap.put("MultiplePaymentModes", "PrepaymentAtBank");
+//
+//
+//        selectVACHeaders = LoginAction.getCurrentHeaders(selectVACResponse.cookies());
+//        selectVACHeaders.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8");
+//        selectVACHeaders.put("Accept-Encoding", "gzip, deflate, br");
+//        selectVACHeaders.put("Content-Type", "application/x-www-form-urlencoded");
+//        selectVACHeaders.put("Host", "online.vfsglobal.com");
+//        selectVACHeaders.put("Referer", selectVACUrl);
+//        // 设置cookie和post上面的map数据
+//        Connection.Response afterSelectCenterResponse = submitSACForm.ignoreContentType(true).method(Connection.Method.POST)
+//                .timeout(TIME_OUT)
+//                .headers(selectVACHeaders)
+//                .data(formDataMap)
+//                .execute();
+        // 等待JS驱动dom完成获得还原后的网页
+        webClient.waitForBackgroundJavaScript(TIME_OUT);
+
+        ((HtmlSelect) selectCenterPage.getElementById("LocationId")).setDefaultValue(locationMapping.get(location).toString());
+        ((HtmlSelect) selectCenterPage.getElementById("VisaCategoryId")).setDefaultValue(visaCategoryMapping.get("WHV").toString());
+
+        HtmlPage afterSelectCenter = ((HtmlSubmitInput) selectCenterPage.getElementById("btnContinue")).click();
+        webClient.waitForBackgroundJavaScript(TIME_OUT);
+
+
+        return afterSelectCenter;
     }
 
     /**
@@ -92,51 +137,28 @@ public class ScheduleAppointment {
      * DialCode: value --> +86 so hard the code
      * EmailId: value
      */
-    public static Connection.Response submitAddApplicant(Connection.Response afterSelectCenterResponse, Map<String, String> addNewApplicantInfoMap) throws IOException {
-        Document beforeAddApplicantPage = Jsoup.parse(afterSelectCenterResponse.body());
-        String addApplicantUrl = "https://online.vfsglobal.com".concat(beforeAddApplicantPage.selectFirst(".submitbtn").attr("href"));
-        Connection connection = Jsoup.connect(addApplicantUrl);
-        Map<String, String> headers = LoginAction.getCurrentHeaders(afterSelectCenterResponse.cookies());
-        headers.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8");
-        headers.put("Accept-Encoding", "gzip, deflate, br");
-        headers.put("Content-Type", "application/x-www-form-urlencoded");
-        headers.put("Host", "online.vfsglobal.com");
-        headers.put("Origin", "https://online.vfsglobal.com");
-        headers.put("Referer", "https://online.vfsglobal.com/Global-Appointment/Applicant/ApplicantList");
-        Connection.Response afterClickAddApplicationResponse = connection.method(Connection.Method.GET)
-                .timeout(TIME_OUT)
-                .headers(headers)
-                .execute();
+    public static HtmlPage submitAddApplicant(HtmlPage afterSelectCenterResponse, WebClient webClient, Map<String, String> addNewApplicantInfoMap) throws IOException {
 
-        Document addApplicantPage = Jsoup.parse(afterClickAddApplicationResponse.body());
+        HtmlPage addApplicantPage = ((HtmlAnchor) afterSelectCenterResponse.getByXPath("//a[@class='submitbtn']").get(0)).click();
+        webClient.waitForBackgroundJavaScript(TIME_OUT);
+        ((HtmlTextInput) addApplicantPage.getElementById("PassportNumber")).setText(addNewApplicantInfoMap.get("PassportNumber"));
+        ((HtmlTextInput) addApplicantPage.getElementById("DateOfBirth")).setText(addNewApplicantInfoMap.get("DateOfBirth"));
+        ((HtmlTextInput) addApplicantPage.getElementById("PassportExpiryDate")).setText(addNewApplicantInfoMap.get("PassportExpiryDate"));
+        ((HtmlSelect) addApplicantPage.getElementById("NationalityId")).setDefaultValue("165"); // 165 is china
+        ((HtmlTextInput) addApplicantPage.getElementById("FirstName")).setText(addNewApplicantInfoMap.get("FirstName"));
+        ((HtmlTextInput) addApplicantPage.getElementById("LastName")).setText(addNewApplicantInfoMap.get("LastName"));
+        ((HtmlSelect) addApplicantPage.getElementById("GenderId")).setDefaultValue(addNewApplicantInfoMap.get("GenderId")); // 165 is china
+        ((HtmlTextInput) addApplicantPage.getElementById("DialCode")).setText(addNewApplicantInfoMap.get("DialCode"));
+        ((HtmlTextInput) addApplicantPage.getElementById("Mobile")).setText(addNewApplicantInfoMap.get("Mobile"));
+        ((HtmlTextInput) addApplicantPage.getElementByName("EmailId")).setText(addNewApplicantInfoMap.get("EmailId"));
 
+        HtmlSubmitInput submitAddApplicant = (HtmlSubmitInput) (addApplicantPage.getElementById("submitbuttonId"));
 
-        Map<String, String> addApplicantFormData = new HashMap<>();
-        addApplicantPage.select("#AddApplicantFormID").get(0).select("input[type=hidden]").forEach(element -> {
-                    if (element.attr("value") != null && element.attr("value").length() > 0)
-                        addApplicantFormData.put(element.attr("name"), element.attr("value"));
-                }
-        );
-        addApplicantFormData.putAll(addNewApplicantInfoMap);
-        addApplicantFormData.put("NationalityId", "165"); // 165表示中国
+        HtmlPage afterSubmitAddApplicant = submitAddApplicant.click();
+        webClient.waitForBackgroundJavaScript(TIME_OUT);
 
 
-        headers = LoginAction.getCurrentHeaders(afterClickAddApplicationResponse.cookies());
-        headers.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8");
-        headers.put("Accept-Encoding", "gzip, deflate, br");
-        headers.put("Content-Type", "application/x-www-form-urlencoded");
-        headers.put("Host", "online.vfsglobal.com");
-        headers.put("Origin", "https://online.vfsglobal.com");
-        headers.put("Referer", addApplicantUrl);
-        // 设置cookie和post上面的map数据
-        connection = Jsoup.connect(ADD_APPLICANT_POST);
-        Connection.Response afterAddApplicantResponse = connection.ignoreContentType(true).method(Connection.Method.POST)
-                .timeout(TIME_OUT)
-                .headers(headers)
-                .data(addApplicantFormData)
-                .execute();
-
-        return afterAddApplicantResponse;
+        return afterSubmitAddApplicant;
     }
 
 
@@ -147,32 +169,40 @@ public class ScheduleAppointment {
      * @return
      * @throws IOException
      */
-    public static Connection.Response submitApplicantList(Connection.Response afterAddApplicantResponse) throws IOException {
-        Document addApplicantPage = Jsoup.parse(afterAddApplicantResponse.body());
-
-        Map<String, String> headers = LoginAction.getCurrentHeaders(afterAddApplicantResponse.cookies());
-        headers.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8");
-        headers.put("Accept-Encoding", "gzip, deflate, br");
-        headers.put("Content-Type", "application/x-www-form-urlencoded");
-        headers.put("Host", "online.vfsglobal.com");
-        headers.put("Origin", "https://online.vfsglobal.com");
-        headers.put("Referer", "https://online.vfsglobal.com/Global-Appointment/Applicant/ApplicantList");
-
-        Map<String, String> addApplicantFormData = new HashMap<>();
-        addApplicantPage.select("#ApplicantListForm").get(0).select("input[type=hidden]").forEach(element -> {
-                    if (element.attr("value") != null && element.attr("value").length() > 0)
-                        addApplicantFormData.put(element.attr("name"), element.attr("value"));
-                }
-        );
-
-        Connection connection = Jsoup.connect(APPLICANT_LIST_POST);
-        Connection.Response afterSubmitApplicantList = connection.ignoreContentType(true).method(Connection.Method.POST)
-                .header("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:29.0) Gecko/20100101 Firefox/29.0")
-                .timeout(TIME_OUT)
-                .data(addApplicantFormData)
-                .headers(afterAddApplicantResponse.headers())
-                .cookies(afterAddApplicantResponse.cookies()).execute();
+    public static HtmlPage submitApplicantList(HtmlPage afterAddApplicantResponse, WebClient webClient) throws IOException {
+        HtmlPage afterSubmitApplicantList = ((HtmlSubmitInput) afterAddApplicantResponse.getByXPath("//input[@class='submitbtn']").get(0)).click();
+        webClient.waitForBackgroundJavaScript(TIME_OUT);
 
         return afterSubmitApplicantList;
     }
+
+    /**
+     * Get available date
+     *
+     * @param afterSubmitApplicantList
+     * @param webClient
+     * @return
+     * @throws IOException
+     */
+    public static HtmlPage submitFinalCalendar(HtmlPage afterSubmitApplicantList, WebClient webClient) throws IOException {
+        HtmlPage afterSubmitAll = null;
+        while (afterSubmitApplicantList != null) {
+            List<HtmlTableDataCell> tds = afterSubmitApplicantList.getByXPath("//div[@class='fc-content']//tbody//td");
+            List<HtmlTableDataCell> availables = tds.parallelStream().filter(td -> td.getAttribute("style").contains("background-color: rgb(188,237,145)")).collect(Collectors.toList());
+            if (availables == null || availables.size() == 0) {
+                HtmlSpan htmlSpan = (HtmlSpan) afterSubmitApplicantList.getByXPath("//td[@class='fc-header-right']/span").get(0);
+                afterSubmitApplicantList = htmlSpan.click();
+            } else {
+                availables.get(0).click();
+                HtmlSubmitInput htmlSubmitInput = (HtmlSubmitInput) afterSubmitApplicantList.getElementById("btnConfirm");
+                afterSubmitAll = htmlSubmitInput.click();
+                webClient.waitForBackgroundJavaScript(TIME_OUT);
+            }
+        }
+
+
+        return afterSubmitAll;
+    }
+
+
 }

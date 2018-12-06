@@ -1,6 +1,8 @@
 package com.whv.util;
 
 
+import com.gargoylesoftware.htmlunit.*;
+import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import org.apache.log4j.Logger;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -9,6 +11,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,60 +27,105 @@ public class CrackWhv {
 
     private static Logger LOGGER = Logger.getLogger(CrackWhv.class);
 
-    private static final String LOGIN_URL = "https://online.vfsglobal.com/Global-Appointment/Account/RegisteredLogin";
+    public static final ThreadLocal<String> tokenThreaLocal = new ThreadLocal<>();
+
+    private static final String LOGIN_URL = "https://online.vfsglobal.com/Global-Appointment";
 
     public static void main(String[] args) throws Exception {
         List<Map<String, String>> applicants = loadApplicant("/Users/gonglongmin/ij_workspace/gonglongmin/s-cross-whv/applicants.txt");
         ForkJoinPool forkJoinPool = new ForkJoinPool(10);
         forkJoinPool.submit(() ->
-                applicants.parallelStream().forEach(applicant -> {
-                    AtomicInteger currentStep = new AtomicInteger(0);
-                    Connection.Response currentResponse = null;
-                    while (currentStep.get() != 5) {
-                        try {
-                            if (currentStep.get() == 0) {
-                                Connection con = Jsoup.connect(LOGIN_URL);// 获取连接
-                                con.header("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:29.0) Gecko/20100101 Firefox/29.0");
-                                con.header("Connection", "keep-alive");
-                                Connection.Response pageResponse = con.timeout(ScheduleAppointment.TIME_OUT).execute();
-                                currentStep.set(1);
-                                currentResponse = pageResponse;
-                            }
-                            if (currentStep.get() == 1) {
-                                Connection.Response afterLogin = LoginAction.submitLoginAction(currentResponse);
-                                String content = Jsoup.parse(afterLogin.body()).toString();
-                                while (content.contains("Your account has been locked, please login after 2 minutes")) {
-                                    LOGGER.error("Sleep 2 mins, account is locked.");
-                                    Thread.sleep(2 * 60 * 1001); // sleep 2mins
-                                    afterLogin = LoginAction.submitLoginAction(currentResponse);
-                                    content = Jsoup.parse(afterLogin.body()).toString();
-                                }
-                                currentStep.set(2);
-                                currentResponse = afterLogin;
-                            }
-                            if (currentStep.get() == 2) {
-                                Connection.Response afterSelectCenter = ScheduleAppointment.submitSelectCenter(currentResponse, applicant.get("Location").toLowerCase()); //TODO location needs to be provided.
-                                currentStep.set(3);
-                                currentResponse = afterSelectCenter;
-                            }
-                            if (currentStep.get() == 3) {
-                                // This step can be skipped.
-                                Connection.Response afterAddApplicant = ScheduleAppointment.submitAddApplicant(currentResponse, applicant); // TODO  need customers personal information, detailed fields see function: submitAddApplicant
-                                currentStep.set(4);
-                                currentResponse = afterAddApplicant;
-                            }
-                            if (currentStep.get() == 4) {
-                                // This step can pass afterSelectCenter or afterAddApplicant
-                                Connection.Response afterSubmitApplicantList = ScheduleAppointment.submitApplicantList(currentResponse);
-                                currentStep.set(5);
-                                currentResponse = afterSubmitApplicantList;
+                        applicants.parallelStream().forEach(applicant -> {
+                            WebClient webClient = new WebClient(BrowserVersion.CHROME);
+                            AtomicInteger currentStep = new AtomicInteger(0);
+                            HtmlPage currentResponse = null;
+                            while (currentStep.get() != 6) {
+                                try {
+                                    if (currentStep.get() == 0) {
+                                        // 模拟一个浏览器
+                                        // 设置webClient的相关参数
+                                        webClient.setCssErrorHandler(new SilentCssErrorHandler());
+                                        //设置ajax
+                                        webClient.setAjaxController(new NicelyResynchronizingAjaxController());
+                                        //设置支持js
+                                        webClient.getOptions().setJavaScriptEnabled(true);
 
+                                        webClient.getOptions().setPopupBlockerEnabled(true);
+                                        //CSS渲染禁止
+                                        webClient.getOptions().setCssEnabled(false);
+                                        //超时时间
+                                        webClient.getOptions().setTimeout(3600 * 1000);
+                                        //设置js抛出异常:false
+                                        webClient.getOptions().setThrowExceptionOnScriptError(false);
+                                        //允许重定向
+                                        webClient.getOptions().setRedirectEnabled(true);
+                                        //允许cookie
+                                        webClient.getCookieManager().setCookiesEnabled(true);
+
+                                        webClient.setConfirmHandler((page, string) -> true);
+
+                                        final List collectedAlerts = new ArrayList();
+                                        webClient.setAlertHandler(new CollectingAlertHandler(collectedAlerts));
+
+                                        HtmlPage htmlPage = webClient.getPage(LOGIN_URL);
+
+                                        currentResponse = htmlPage;
+                                        currentStep.set(1);
+                                    }
+                                    if (currentStep.get() == 1) {
+                                        HtmlPage afterLogin = LoginAction.submitLoginAction(currentResponse, webClient, webClient.getCookies(new URL(LOGIN_URL)));
+                                        String content = afterLogin.asText();
+                                        while (content.contains("Your account has been locked, please login after 2 minutes")) {
+                                            LOGGER.error("Sleep 2 mins, account is locked.");
+                                            Thread.sleep(2 * 60 * 1001); // sleep 2mins
+                                            afterLogin = LoginAction.submitLoginAction(currentResponse, webClient, webClient.getCookies(new URL(LOGIN_URL)));
+                                            content = afterLogin.asText();
+                                        }
+                                        currentStep.set(2);
+                                        currentResponse = afterLogin;
+                                    }
+                                    if (currentStep.get() == 2) {
+                                        HtmlPage afterSelectCenter = ScheduleAppointment.submitSelectCenter(currentResponse, webClient, applicant.get("Location").toLowerCase()); //TODO location needs to be provided.
+                                        currentStep.set(3);
+                                        currentResponse = afterSelectCenter;
+                                    }
+                                    if (currentStep.get() == 3) {
+                                        // This step can be skipped.
+                                        HtmlPage afterAddApplicant = ScheduleAppointment.submitAddApplicant(currentResponse, webClient, applicant); // TODO  need customers personal information, detailed fields see function: submitAddApplicant
+                                        currentStep.set(4);
+                                        currentResponse = afterAddApplicant;
+                                    }
+                                    if (currentStep.get() == 4) {
+                                        // This step can pass afterSelectCenter or afterAddApplicant
+                                        HtmlPage afterSubmitApplicantList = ScheduleAppointment.submitApplicantList(currentResponse, webClient);
+                                        currentStep.set(5);
+                                        currentResponse = afterSubmitApplicantList;
+
+                                    }
+                                    if (currentStep.get() == 5) {
+                                        // Press after select available day.
+                                        HtmlPage afterSubmitApplicantList = ScheduleAppointment.submitFinalCalendar(currentResponse, webClient);
+                                        currentStep.set(6);
+                                        currentResponse = afterSubmitApplicantList;
+
+                                    }
+
+                                } catch (Exception e) {
+                                    Connection logoutConnection = Jsoup.connect("https://online.vfsglobal.com/Global-Appointment/Account/LogOff");
+                                    logoutConnection.data(new HashMap<String, String>() {{
+                                        put("__RequestVerificationToken", tokenThreaLocal.get());
+                                    }});
+                                    try {
+                                        Connection.Response response = logoutConnection.method(Connection.Method.POST).execute();
+                                        System.out.println(Jsoup.parse(response.body()));
+                                    } catch (IOException e1) {
+                                        e1.printStackTrace();
+                                    }
+
+                                    LOGGER.error(String.format("[ %s %s ] step [%d] error, retry...", applicant.get("FirstName"), applicant.get("LastName"), currentStep.get()), e);
+                                }
                             }
-                        } catch (Exception e) {
-                            LOGGER.error(String.format("[ %s %s ] step [%d] error, retry...", applicant.get("FirstName"), applicant.get("LastName"), currentStep.get()), e);
-                        }
-                    }
-                })
+                        })
         ).get();
     }
 
