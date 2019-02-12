@@ -2,15 +2,11 @@ package com.whv.util;
 
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.*;
-import org.jsoup.Connection;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -39,77 +35,10 @@ public class ScheduleAppointment {
     private static final String APPLICANT_LIST_POST = "https://online.vfsglobal.com/Global-Appointment/Applicant/ApplicantList";
 
     public static HtmlPage submitSelectCenter(HtmlPage loginResponse, WebClient webClient, String location) throws Exception {
-        /*
-         SetMissionAndCountry :: https://online.vfsglobal.com/Global-Appointment/Account/SetMissionAndCountry :: POST
-         */
-//        Connection setMissionAndCountryConnection = Jsoup.connect("https://online.vfsglobal.com/Global-Appointment/Account/SetMissionAndCountry");
-//        setMissionAndCountryHeaders.put("Accept", "application/json, text/javascript, */*; q=0.01");
-//        setMissionAndCountryHeaders.put("Accept-Encoding", "gzip, deflate, br");
-//        setMissionAndCountryHeaders.put("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7");
-//        setMissionAndCountryHeaders.put("Connection", "keep-alive");
-//        setMissionAndCountryHeaders.put("Origin", "https://online.vfsglobal.com");
-//        setMissionAndCountryHeaders.put("Referer", "https://online.vfsglobal.com/Global-Appointment");
-//        Connection.Response setMissionAndCountryResponse = setMissionAndCountryConnection.ignoreContentType(true).method(Connection.Method.POST).timeout(TIME_OUT)
-//                .headers(setMissionAndCountryHeaders)
-//                .execute();
-//        System.out.println(Jsoup.parse(setMissionAndCountryResponse.body()));
-
-
-        /*
-        https://online.vfsglobal.com/Global-Appointment/Home/SelectVAC?q=xxxxx
-         */
-//        Map<String, String> formDataMap = new HashMap<>();
-//        String selectVACUrl = "https://online.vfsglobal.com" + Jsoup.parse(loginResponse.body()).select(".inactive-link").first().children().first().attr("href");
-//
-//        // 设置cookie和post上面的map数据
-//        Map<String, String> selectVACHeaders = LoginAction.getCurrentHeaders(loginResponse.cookies());
-//        selectVACHeaders.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8");
-//        selectVACHeaders.put("Accept-Encoding", "gzip, deflate, br");
-//        selectVACHeaders.put("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7");
-//        selectVACHeaders.put("Referer", "https://online.vfsglobal.com/Global-Appointment");
-//        selectVACHeaders.put("Connection", "keep-alive");
-//        selectVACHeaders.put("Origin", "https://online.vfsglobal.com");
-//        selectVACHeaders.put("Upgrade-Insecure-Requests", "1");
-//        Connection setConnection = Jsoup.connect(selectVACUrl);
-//        Connection.Response selectVACResponse = setConnection.ignoreContentType(true).method(Connection.Method.POST)
-//                .timeout(TIME_OUT)
-//                .headers(selectVACHeaders)
-//                .execute();
 
         HtmlAnchor scheduleItem = (HtmlAnchor) loginResponse.getByXPath("//li[@class='inactive-link']/a").get(0);
         HtmlPage selectCenterPage = scheduleItem.click();
 
-
-//        Connection submitSACForm = Jsoup.connect("https://online.vfsglobal.com/Global-Appointment/Home/SelectVAC");
-//        formDataMap.put("paraMissionId", "22");
-//        formDataMap.put("paramCountryId", "11");
-//        formDataMap.put("masterMissionName", "Australia");
-//        formDataMap.put("masterCountryName", "China");
-//        formDataMap.put("IsApplicationTypeEnabled", "False");
-//        formDataMap.put("MainVisaCategoryDisplayEnabled", "False");
-//        formDataMap.put("MissionId", "22");
-//        formDataMap.put("CountryId", "11");
-//        formDataMap.put("MissionCountryLocationJSON", "[{\"Id\":0,\"Name\":\"Select Visiting Country\",\"CountryJEs\":null,\"ChildMissionJEs\":null},{\"Id\":22,\"Name\":\"Australia\",\"CountryJEs\":[{\"Locations\":null,\"ShowDocumentCheckList\":false,\"MissionId\":0,\"VisaCategories\":null,\"Id\":0,\"Name\":\"Select Residing Country\"},{\"Locations\":[{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"}],\"TypeId\":0,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":0,\"Name\":\"Select Centre\"},{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"},{\"SubVisaCategories\":null,\"Id\":419,\"Name\":\"Biometrics Enrolment\"},{\"SubVisaCategories\":null,\"Id\":418,\"Name\":\"General Visa\"}],\"TypeId\":1,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":161,\"Name\":\"Australia Visa Application Centre - Guangzhou\"},{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"},{\"SubVisaCategories\":null,\"Id\":419,\"Name\":\"Biometrics Enrolment\"},{\"SubVisaCategories\":null,\"Id\":418,\"Name\":\"General Visa\"}],\"TypeId\":1,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":160,\"Name\":\"Australia Visa Application Centre-Beijing\"},{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"},{\"SubVisaCategories\":null,\"Id\":419,\"Name\":\"Biometrics Enrolment\"},{\"SubVisaCategories\":null,\"Id\":418,\"Name\":\"General Visa\"},{\"SubVisaCategories\":null,\"Id\":416,\"Name\":\"Work and Holiday Visa\"}],\"TypeId\":1,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":163,\"Name\":\"Australia Visa Application Centre-Chengdu\"},{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"},{\"SubVisaCategories\":null,\"Id\":419,\"Name\":\"Biometrics Enrolment\"},{\"SubVisaCategories\":null,\"Id\":418,\"Name\":\"General Visa\"},{\"SubVisaCategories\":null,\"Id\":416,\"Name\":\"Work and Holiday Visa\"}],\"TypeId\":1,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":162,\"Name\":\"Australia Visa Application Centre-Shanghai\"}],\"ShowDocumentCheckList\":false,\"MissionId\":0,\"VisaCategories\":null,\"Id\":11,\"Name\":\"China\"}],\"ChildMissionJEs\":[{\"ParentMissionId\":0,\"Id\":0,\"Name\":\"Select Sub-Mission\"}]}]");
-//        formDataMap.put("LocationId", locationMapping.get(location).toString());
-//        formDataMap.put("VisaCategoryId", visaCategoryMapping.get("WHV").toString());
-//        formDataMap.put("VisaCategoryId", "416");
-//        formDataMap.put("AppointmentType", "PrimeAppointment");
-//        formDataMap.put("MultiplePaymentModes", "PrepaymentAtBank");
-//
-//
-//        selectVACHeaders = LoginAction.getCurrentHeaders(selectVACResponse.cookies());
-//        selectVACHeaders.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8");
-//        selectVACHeaders.put("Accept-Encoding", "gzip, deflate, br");
-//        selectVACHeaders.put("Content-Type", "application/x-www-form-urlencoded");
-//        selectVACHeaders.put("Host", "online.vfsglobal.com");
-//        selectVACHeaders.put("Referer", selectVACUrl);
-//        // 设置cookie和post上面的map数据
-//        Connection.Response afterSelectCenterResponse = submitSACForm.ignoreContentType(true).method(Connection.Method.POST)
-//                .timeout(TIME_OUT)
-//                .headers(selectVACHeaders)
-//                .data(formDataMap)
-//                .execute();
-        // 等待JS驱动dom完成获得还原后的网页
         webClient.waitForBackgroundJavaScript(TIME_OUT);
 
         ((HtmlSelect) selectCenterPage.getElementById("LocationId")).setDefaultValue(locationMapping.get(location).toString());
@@ -137,20 +66,20 @@ public class ScheduleAppointment {
      * DialCode: value --> +86 so hard the code
      * EmailId: value
      */
-    public static HtmlPage submitAddApplicant(HtmlPage afterSelectCenterResponse, WebClient webClient, Map<String, String> addNewApplicantInfoMap) throws IOException {
+    public static HtmlPage submitAddApplicant(HtmlPage afterSelectCenterResponse, WebClient webClient, CrackWhv.ApplicantInfo applicantInfo) throws IOException {
 
         HtmlPage addApplicantPage = ((HtmlAnchor) afterSelectCenterResponse.getByXPath("//a[@class='submitbtn']").get(0)).click();
         webClient.waitForBackgroundJavaScript(TIME_OUT);
-        ((HtmlTextInput) addApplicantPage.getElementById("PassportNumber")).setText(addNewApplicantInfoMap.get("PassportNumber"));
-        ((HtmlTextInput) addApplicantPage.getElementById("DateOfBirth")).setText(addNewApplicantInfoMap.get("DateOfBirth"));
-        ((HtmlTextInput) addApplicantPage.getElementById("PassportExpiryDate")).setText(addNewApplicantInfoMap.get("PassportExpiryDate"));
+        ((HtmlTextInput) addApplicantPage.getElementById("PassportNumber")).setText(applicantInfo.getPassportNumber());
+        ((HtmlTextInput) addApplicantPage.getElementById("DateOfBirth")).setText(applicantInfo.getDateOfBirth());
+        ((HtmlTextInput) addApplicantPage.getElementById("PassportExpiryDate")).setText(applicantInfo.getPassportExpiryDate());
         ((HtmlSelect) addApplicantPage.getElementById("NationalityId")).setDefaultValue("165"); // 165 is china
-        ((HtmlTextInput) addApplicantPage.getElementById("FirstName")).setText(addNewApplicantInfoMap.get("FirstName"));
-        ((HtmlTextInput) addApplicantPage.getElementById("LastName")).setText(addNewApplicantInfoMap.get("LastName"));
-        ((HtmlSelect) addApplicantPage.getElementById("GenderId")).setDefaultValue(addNewApplicantInfoMap.get("GenderId")); // 165 is china
-        ((HtmlTextInput) addApplicantPage.getElementById("DialCode")).setText(addNewApplicantInfoMap.get("DialCode"));
-        ((HtmlTextInput) addApplicantPage.getElementById("Mobile")).setText(addNewApplicantInfoMap.get("Mobile"));
-        ((HtmlTextInput) addApplicantPage.getElementByName("EmailId")).setText(addNewApplicantInfoMap.get("EmailId"));
+        ((HtmlTextInput) addApplicantPage.getElementById("FirstName")).setText(applicantInfo.getFirstName());
+        ((HtmlTextInput) addApplicantPage.getElementById("LastName")).setText(applicantInfo.getLastName());
+        ((HtmlSelect) addApplicantPage.getElementById("GenderId")).setDefaultValue(applicantInfo.getGenderId()); // 165 is china
+        ((HtmlTextInput) addApplicantPage.getElementById("DialCode")).setText(applicantInfo.getDialCode());
+        ((HtmlTextInput) addApplicantPage.getElementById("Mobile")).setText(applicantInfo.getMobile());
+        ((HtmlTextInput) addApplicantPage.getElementByName("EmailId")).setText(applicantInfo.getEmailId());
 
         HtmlSubmitInput submitAddApplicant = (HtmlSubmitInput) (addApplicantPage.getElementById("submitbuttonId"));
 
@@ -186,20 +115,25 @@ public class ScheduleAppointment {
      */
     public static HtmlPage submitFinalCalendar(HtmlPage afterSubmitApplicantList, WebClient webClient) throws IOException {
         HtmlPage afterSubmitAll = null;
+        int month = 2;
         while (afterSubmitApplicantList != null) {
+            if (month == 2) { // skip to March.
+                HtmlSpan htmlSpan = (HtmlSpan) afterSubmitApplicantList.getByXPath("//td[@class='fc-header-right']/span").get(0);
+                afterSubmitApplicantList = htmlSpan.click();
+                month++;
+            }
             List<HtmlTableDataCell> tds = afterSubmitApplicantList.getByXPath("//div[@class='fc-content']//tbody//td");
-            List<HtmlTableDataCell> availables = tds.parallelStream().filter(td -> td.getAttribute("style").contains("background-color: rgb(188,237,145)")).collect(Collectors.toList());
-            if (availables == null || availables.size() == 0) {
+            List<HtmlTableDataCell> availableList = tds.parallelStream().filter(td -> td.getAttribute("style").contains("background-color: rgb(188,237,145)")).collect(Collectors.toList());
+            if (availableList == null || availableList.size() == 0) {
                 HtmlSpan htmlSpan = (HtmlSpan) afterSubmitApplicantList.getByXPath("//td[@class='fc-header-right']/span").get(0);
                 afterSubmitApplicantList = htmlSpan.click();
             } else {
-                availables.get(0).click();
+                availableList.get(0).click();
                 HtmlSubmitInput htmlSubmitInput = (HtmlSubmitInput) afterSubmitApplicantList.getElementById("btnConfirm");
                 afterSubmitAll = htmlSubmitInput.click();
                 webClient.waitForBackgroundJavaScript(TIME_OUT);
             }
         }
-
 
         return afterSubmitAll;
     }

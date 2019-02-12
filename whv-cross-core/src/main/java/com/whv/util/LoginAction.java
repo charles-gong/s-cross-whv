@@ -8,9 +8,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.InputStream;
 import java.util.*;
 
 /**
@@ -30,27 +29,33 @@ public class LoginAction {
     }
 
 
-    public static HtmlPage submitLoginAction(HtmlPage previousResponse, WebClient webClient, Set<Cookie> cookieSet) throws Exception {
+    public static HtmlPage submitLoginAction(HtmlPage previousResponse, WebClient webClient, Set<Cookie> cookieSet, CrackWhv.LoginAccount loginAccount) throws Exception {
         HtmlHiddenInput captchaDeText = (HtmlHiddenInput) previousResponse.getElementById("CaptchaDeText");
         String q = captchaDeText.getValueAttribute();
         Map<String, String> cookieMap = new HashMap<>();
         cookieSet.forEach(cookie -> cookieMap.put(cookie.getName(), cookie.getValue()));
-        List<Object> results = ImageCapture.refresh(cookieMap, q);
+        byte[] results = null;
 
         try {
-            InputStream buffin = new ByteArrayInputStream((byte[]) results.get(1), 0, ((byte[]) results.get(1)).length);
-            BufferedImage img = ImageIO.read(buffin);
-            File outputfile = new File("/Users/gonglongmin/ij_workspace/gonglongmin/s-cross-whv/whv-cross-core/src/main/resources/captcha/" + UUID.randomUUID() + ".png");
-            ImageIO.write(img, "png", outputfile);
+
+            BufferedImage img = ((HtmlImage) previousResponse.getElementById("CaptchaImage")).getImageReader().read(0);
+            String name = "./" + UUID.randomUUID() + ".png";
+            File outputFile = new File(name);
+            ImageIO.write(img, "png", outputFile);
+            BufferedImage originalImage = ImageIO.read(new File(name));
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(originalImage, "jpg", baos);
+            baos.flush();
+            //使用toByteArray()方法转换成字节数组
+            results = baos.toByteArray();
+            baos.close();
+
         } catch (Exception ex) {
             System.out.println("Exception: " + ex);
             ex.printStackTrace();
         }
 
-        if (results.size() == 1) {
-            throw new RuntimeException("Exception");
-        }
-        CaptchaUtil.HttpResp httpResp = RequestCaptchaApi.Predict("20500", (byte[]) results.get(1));
+        CaptchaUtil.HttpResp httpResp = RequestCaptchaApi.Predict("20500", results);
         if (httpResp.getRet_code() != 0) {
             // error
             throw new RuntimeException("Exception");
@@ -61,13 +66,11 @@ public class LoginAction {
 
             // got form
             HtmlForm loginForm = (HtmlForm) previousResponse.getElementById("ApplicantListForm");
-            ((HtmlTextInput) loginForm.getInputByName("EmailId")).setText("glmlyf@163.com");
-            ((HtmlPasswordInput) loginForm.getInputByName("Password")).setText("$Gong12081");
+            ((HtmlTextInput) loginForm.getInputByName("EmailId")).setText(loginAccount.getName());
+            ((HtmlPasswordInput) loginForm.getInputByName("Password")).setText(loginAccount.getPassword());
             ((HtmlTextInput) loginForm.getInputByName("CaptchaInputText")).setText(captchaText);
-            (loginForm.getInputByName("CaptchaDeText")).setValueAttribute((String) results.get(0));
 
-
-            HtmlPage afterLogin = ((HtmlSubmitInput)previousResponse.getByXPath("//input[@class='submitbtn']").get(0)).click();
+            HtmlPage afterLogin = ((HtmlSubmitInput) previousResponse.getByXPath("//input[@class='submitbtn']").get(0)).click();
 
             // 等待JS驱动dom完成获得还原后的网页
             webClient.waitForBackgroundJavaScript(ScheduleAppointment.TIME_OUT);
