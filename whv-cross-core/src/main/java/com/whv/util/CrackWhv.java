@@ -54,7 +54,6 @@ public class CrackWhv {
                         WebClient webClient = new WebClient(BrowserVersion.CHROME);
                         AtomicInteger currentStep = new AtomicInteger(0);
                         HtmlPage currentResponse = null;
-                        String token = null;
                         while (currentStep.get() != 6) {
                             try {
                                 if (currentStep.get() == 0) {
@@ -84,7 +83,6 @@ public class CrackWhv {
                                     webClient.setAlertHandler(new CollectingAlertHandler(collectedAlerts));
 
                                     HtmlPage htmlPage = webClient.getPage(LOGIN_URL);
-                                    token = ((HtmlHiddenInput) htmlPage.getElementById("__RequestVerificationToken")).getValueAttribute();
                                     currentResponse = htmlPage;
                                     currentStep.set(1);
                                 }
