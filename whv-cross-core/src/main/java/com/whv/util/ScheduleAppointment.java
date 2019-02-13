@@ -4,6 +4,7 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -114,7 +115,7 @@ public class ScheduleAppointment {
      * @throws IOException
      */
     public static HtmlPage submitFinalCalendar(HtmlPage afterSubmitApplicantList, WebClient webClient) throws IOException {
-        HtmlPage afterSubmitAll = null;
+        HtmlPage afterSubmitCalendar = null;
         int month = 2;
         while (afterSubmitApplicantList != null) {
             if (month == 2) { // skip to March.
@@ -129,14 +130,47 @@ public class ScheduleAppointment {
                 afterSubmitApplicantList = htmlSpan.click();
             } else {
                 availableList.get(0).click();
+                // choose time.
+                List<HtmlElement> htmlElementList = afterSubmitApplicantList.getElementById("TimeBandsDiv").getElementsByTagName("input");
+                if (htmlElementList != null && htmlElementList.size() > 0) {
+                    List<HtmlRadioButtonInput> htmlRadioButtonInputList = new ArrayList<>();
+                    htmlElementList.forEach(htmlElement -> {
+                        if (htmlElement instanceof HtmlRadioButtonInput) {
+                            htmlRadioButtonInputList.add((HtmlRadioButtonInput) htmlElement);
+                        }
+                    });
+
+                    if (htmlRadioButtonInputList.size() > 4) {
+                        htmlRadioButtonInputList.get(4).click();
+                    }
+                }
+                HtmlLabel htmlLabel = (HtmlLabel) afterSubmitApplicantList.getByXPath("//div[@class='mandatory-txt']//label").get(0);
+                String reservedNo = htmlLabel.getTextContent();
                 HtmlSubmitInput htmlSubmitInput = (HtmlSubmitInput) afterSubmitApplicantList.getElementById("btnConfirm");
-                afterSubmitAll = htmlSubmitInput.click();
+                afterSubmitCalendar = htmlSubmitInput.click();
                 webClient.waitForBackgroundJavaScript(TIME_OUT);
             }
         }
 
-        return afterSubmitAll;
+        return afterSubmitCalendar;
     }
 
+
+    public static HtmlPage submitConfirmPage(HtmlPage afterSubmitCalendar, WebClient webClient) throws IOException {
+        HtmlCheckBoxInput htmlCheckBoxInput = (HtmlCheckBoxInput) afterSubmitCalendar.getByXPath("//input[@type='checkbox']").get(0);
+        htmlCheckBoxInput.click();
+
+        //choose submit
+        HtmlPage afterConfirm = null;
+        List<HtmlElement> htmlElementList = afterSubmitCalendar.getByXPath("//a[@class='submitbtn']");
+        if (htmlElementList != null && htmlElementList.size() > 0) {
+            afterConfirm = ((HtmlAnchor) htmlElementList.get(0)).click();
+        } else {
+            afterConfirm = ((HtmlSubmitInput) afterSubmitCalendar.getByXPath("//input[@class='submitbtn']").get(0)).click();
+        }
+        webClient.waitForBackgroundJavaScript(TIME_OUT);
+
+        return afterConfirm;
+    }
 
 }

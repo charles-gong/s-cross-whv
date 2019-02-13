@@ -3,12 +3,8 @@ package com.whv.util;
 
 import com.gargoylesoftware.htmlunit.*;
 import com.gargoylesoftware.htmlunit.html.HtmlAnchor;
-import com.gargoylesoftware.htmlunit.html.HtmlForm;
-import com.gargoylesoftware.htmlunit.html.HtmlHiddenInput;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import org.apache.log4j.Logger;
-import org.jsoup.Connection;
-import org.jsoup.Jsoup;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -16,7 +12,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
-
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -85,6 +80,7 @@ public class CrackWhv {
                                     HtmlPage htmlPage = webClient.getPage(LOGIN_URL);
                                     currentResponse = htmlPage;
                                     currentStep.set(1);
+                                    LOGGER.info(" [ " + loginAccount.getName() + " ] " + " Loading ... successfully");
                                 }
                                 if (currentStep.get() == 1) {
                                     HtmlPage afterLogin = LoginAction.submitLoginAction(currentResponse, webClient, webClient.getCookies(new URL(LOGIN_URL)), loginAccount);
@@ -97,11 +93,13 @@ public class CrackWhv {
                                     }
                                     currentStep.set(2);
                                     currentResponse = afterLogin;
+                                    LOGGER.info(" [ " + loginAccount.getName() + " ] " + "Login on ... successfully");
                                 }
                                 if (currentStep.get() == 2) {
                                     HtmlPage afterSelectCenter = ScheduleAppointment.submitSelectCenter(currentResponse, webClient, location.toLowerCase()); //TODO location needs to be provided.
                                     currentStep.set(3);
                                     currentResponse = afterSelectCenter;
+                                    LOGGER.info(" [ " + loginAccount.getName() + " ] " + "Select center ... successfully");
                                 }
                                 if (currentStep.get() == 3) {
                                     Iterator<ApplicantInfo> iterator = applicantInfoList.iterator();
@@ -116,20 +114,26 @@ public class CrackWhv {
                                         currentResponse = afterAddApplicant;
                                     }
                                     currentStep.set(4);
+                                    LOGGER.info(" [ " + loginAccount.getName() + " ] " + "Adding applicant list ... successfully");
                                 }
                                 if (currentStep.get() == 4) {
                                     // This step can pass afterSelectCenter or afterAddApplicant
                                     HtmlPage afterSubmitApplicantList = ScheduleAppointment.submitApplicantList(currentResponse, webClient);
                                     currentStep.set(5);
                                     currentResponse = afterSubmitApplicantList;
-
+                                    LOGGER.info("Submit applicant list ... successfully");
                                 }
                                 if (currentStep.get() == 5) {
                                     // Press after select available day.
-                                    HtmlPage afterSubmitApplicantList = ScheduleAppointment.submitFinalCalendar(currentResponse, webClient);
+                                    HtmlPage afterSubmitCalendar = ScheduleAppointment.submitFinalCalendar(currentResponse, webClient);
                                     currentStep.set(6);
-                                    currentResponse = afterSubmitApplicantList;
+                                    currentResponse = afterSubmitCalendar;
+                                    LOGGER.info(" [ " + loginAccount.getName() + " ] " + "Submit calendar ... successfully");
+                                }
 
+                                if (currentStep.get() == 6) {
+                                    ScheduleAppointment.submitConfirmPage(currentResponse, webClient);
+                                    LOGGER.info(" [ " + loginAccount.getName() + " ] " + "Final step ... successfully");
                                 }
 
                             } catch (Exception e) {
