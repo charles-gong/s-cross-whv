@@ -1,8 +1,17 @@
 package com.whv.util;
 
 
-import com.gargoylesoftware.htmlunit.*;
+import com.gargoylesoftware.htmlunit.BrowserVersion;
+import com.gargoylesoftware.htmlunit.CollectingAlertHandler;
+import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
+import com.gargoylesoftware.htmlunit.NicelyResynchronizingAjaxController;
+import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
+import com.gargoylesoftware.htmlunit.WebClient;
+import com.gargoylesoftware.htmlunit.html.HtmlAnchor;
+import com.gargoylesoftware.htmlunit.html.HtmlElement;
+import com.gargoylesoftware.htmlunit.html.HtmlHiddenInput;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
+
 import org.apache.log4j.Logger;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -16,7 +25,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -32,14 +40,15 @@ public class CrackWhv {
     private static final String LOGIN_URL = "https://online.vfsglobal.com/Global-Appointment";
 
     public static void main(String[] args) throws Exception {
-        List<Map<String, String>> applicants = loadApplicant("/Users/gonglongmin/ij_workspace/gonglongmin/s-cross-whv/applicants.txt");
+        List<Map<String, String>> applicants = loadApplicant("./applicants.txt");
         ForkJoinPool forkJoinPool = new ForkJoinPool(10);
         forkJoinPool.submit(() ->
                         applicants.parallelStream().forEach(applicant -> {
                             WebClient webClient = new WebClient(BrowserVersion.CHROME);
                             AtomicInteger currentStep = new AtomicInteger(0);
                             HtmlPage currentResponse = null;
-                            while (currentStep.get() != 6) {
+                            StringBuilder token = new StringBuilder();
+                            while (currentStep.get() != 7) {
                                 try {
                                     if (currentStep.get() == 0) {
                                         // 模拟一个浏览器
@@ -48,7 +57,7 @@ public class CrackWhv {
                                         //设置ajax
                                         webClient.setAjaxController(new NicelyResynchronizingAjaxController());
                                         //设置支持js
-                                        webClient.getOptions().setJavaScriptEnabled(true);
+                                        webClient.getOptions().setJavaScriptEnabled(false);
 
                                         webClient.getOptions().setPopupBlockerEnabled(true);
                                         //CSS渲染禁止
@@ -69,6 +78,7 @@ public class CrackWhv {
 
                                         HtmlPage htmlPage = webClient.getPage(LOGIN_URL);
 
+                                        token.append(((HtmlHiddenInput) (htmlPage.getElementById("ApplicantListForm").getElementsByTagName("input").get(0))).getValueAttribute());
                                         currentResponse = htmlPage;
                                         currentStep.set(1);
                                     }
@@ -85,36 +95,56 @@ public class CrackWhv {
                                         currentResponse = afterLogin;
                                     }
                                     if (currentStep.get() == 2) {
-                                        HtmlPage afterSelectCenter = ScheduleAppointment.submitSelectCenter(currentResponse, webClient, applicant.get("Location").toLowerCase()); //TODO location needs to be provided.
-                                        currentStep.set(3);
+                                        List<HtmlElement> htmlElementList = currentResponse.getByXPath("//div[@class='AccordionPanelContent']//a");
+                                        if (htmlElementList == null || htmlElementList.size() == 0) {
+                                            //TODO
+                                            logout(null);
+                                            currentStep.set(0);
+                                        }
+                                        HtmlPage afterSelectCenter = ScheduleAppointment.submitSelectCenter(currentResponse, webClient, "shanghai");
                                         currentResponse = afterSelectCenter;
+                                        currentStep.set(3);
                                     }
                                     if (currentStep.get() == 3) {
-                                        // This step can be skipped.
-                                        HtmlPage afterAddApplicant = ScheduleAppointment.submitAddApplicant(currentResponse, webClient, applicant); // TODO  need customers personal information, detailed fields see function: submitAddApplicant
-                                        currentStep.set(4);
-                                        currentResponse = afterAddApplicant;
+                                        List<HtmlElement> htmlElements = currentResponse.getByXPath("//a[@class='submitbtn']");
+                                        if (htmlElements == null || htmlElements.size() == 0) {
+                                            logout(null);
+                                            currentStep.set(0);
+                                        }
+                                        HtmlPage addApplicantPage = ((HtmlAnchor) currentResponse.getByXPath("//a[@class='submitbtn']").get(0)).click();
+                                        currentResponse = addApplicantPage;
+                                        currentStep.set(3);
                                     }
                                     if (currentStep.get() == 4) {
-                                        // This step can pass afterSelectCenter or afterAddApplicant
-                                        HtmlPage afterSubmitApplicantList = ScheduleAppointment.submitApplicantList(currentResponse, webClient);
+                                        // This step can be skipped.
+                                        HtmlPage afterAddApplicant = ScheduleAppointment.submitAddApplicant(currentResponse, webClient, applicant); // TODO  need customers personal information, detailed fields see function: submitAddApplicant
                                         currentStep.set(5);
-                                        currentResponse = afterSubmitApplicantList;
-
+                                        currentResponse = afterAddApplicant;
                                     }
                                     if (currentStep.get() == 5) {
-                                        // Press after select available day.
-                                        HtmlPage afterSubmitApplicantList = ScheduleAppointment.submitFinalCalendar(currentResponse, webClient);
+                                        // This step can pass afterSelectCenter or afterAddApplicant
+                                        HtmlPage afterSubmitApplicantList = ScheduleAppointment.submitApplicantList(currentResponse, webClient);
                                         currentStep.set(6);
                                         currentResponse = afterSubmitApplicantList;
 
                                     }
+                                    if (currentStep.get() == 6) {
+                                        // Press after select available day.
+                                        HtmlPage afterSubmitApplicantList = ScheduleAppointment.submitFinalCalendar(currentResponse, webClient);
+                                        currentStep.set(7);
+                                        currentResponse = afterSubmitApplicantList;
+                                    }
 
+                                } catch (FailingHttpStatusCodeException statusCodeException) {
+                                    if (statusCodeException.getStatusCode() == 503) {
+                                        LOGGER.error(String.format("Current step is [ %d ], Exception status code is [ %d ]", currentStep.get(), statusCodeException.getStatusCode()));
+                                        LOGGER.error(statusCodeException);
+                                    }
                                 } catch (Exception e) {
                                     Connection logoutConnection = Jsoup.connect("https://online.vfsglobal.com/Global-Appointment/Account/LogOff");
-                                    logoutConnection.data(new HashMap<String, String>() {{
-                                        put("__RequestVerificationToken", tokenThreaLocal.get());
-                                    }});
+//                            logoutConnection.data(new HashMap<String, String>() {{
+//                                put("__RequestVerificationToken", tokenThreaLocal.get());
+//                            }});
                                     try {
                                         Connection.Response response = logoutConnection.method(Connection.Method.POST).execute();
                                         System.out.println(Jsoup.parse(response.body()));
@@ -127,6 +157,10 @@ public class CrackWhv {
                             }
                         })
         ).get();
+    }
+
+    private static void logout(String token) {
+
     }
 
     /**

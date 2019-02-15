@@ -40,7 +40,7 @@ public class LoginAction {
         try {
             InputStream buffin = new ByteArrayInputStream((byte[]) results.get(1), 0, ((byte[]) results.get(1)).length);
             BufferedImage img = ImageIO.read(buffin);
-            File outputfile = new File("/Users/gonglongmin/ij_workspace/gonglongmin/s-cross-whv/whv-cross-core/src/main/resources/captcha/" + UUID.randomUUID() + ".png");
+            File outputfile = new File("./" + UUID.randomUUID() + ".png");
             ImageIO.write(img, "png", outputfile);
         } catch (Exception ex) {
             System.out.println("Exception: " + ex);
