@@ -1,13 +1,7 @@
 package com.whv.util;
 
 import com.gargoylesoftware.htmlunit.WebClient;
-import com.gargoylesoftware.htmlunit.html.HtmlAnchor;
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
-import com.gargoylesoftware.htmlunit.html.HtmlSelect;
-import com.gargoylesoftware.htmlunit.html.HtmlSpan;
-import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
-import com.gargoylesoftware.htmlunit.html.HtmlTableDataCell;
-import com.gargoylesoftware.htmlunit.html.HtmlTextInput;
+import com.gargoylesoftware.htmlunit.html.*;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -145,6 +139,23 @@ public class ScheduleAppointment {
 
 
         return afterSubmitAll;
+    }
+
+    public static HtmlPage submitConfirmPage(HtmlPage afterSubmitCalendar, WebClient webClient) throws IOException {
+        HtmlCheckBoxInput htmlCheckBoxInput = (HtmlCheckBoxInput) afterSubmitCalendar.getByXPath("//input[@type='checkbox']").get(0);
+        htmlCheckBoxInput.click();
+
+        //choose submit
+        HtmlPage afterConfirm = null;
+        List<HtmlElement> htmlElementList = afterSubmitCalendar.getByXPath("//a[@class='submitbtn']");
+        if (htmlElementList != null && htmlElementList.size() > 0) {
+            afterConfirm = ((HtmlAnchor) htmlElementList.get(0)).click();
+        } else {
+            afterConfirm = ((HtmlSubmitInput) afterSubmitCalendar.getByXPath("//input[@class='submitbtn']").get(0)).click();
+        }
+        webClient.waitForBackgroundJavaScript(TIME_OUT);
+
+        return afterConfirm;
     }
 
 
