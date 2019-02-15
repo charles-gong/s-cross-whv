@@ -43,15 +43,27 @@ public class ScheduleAppointment {
     public static HtmlPage submitSelectCenter(HtmlPage loginResponse, WebClient webClient, String location) throws Exception {
 
         HtmlAnchor scheduleItem = (HtmlAnchor) loginResponse.getByXPath("//li[@class='inactive-link']/a").get(0);
+
         webClient.getOptions().setJavaScriptEnabled(true);
         HtmlPage selectCenterPage = scheduleItem.click();
+        /**
+         * 当前页面有JS一定要执行
+         * 可查看是不是有post／get请求
+         */
+        webClient.waitForBackgroundJavaScript(TIME_OUT);
 
-//        webClient.getOptions().setJavaScriptEnabled(false);
+        // webClient.getOptions().setJavaScriptEnabled(false);
         ((HtmlSelect) selectCenterPage.getElementById("LocationId")).setDefaultValue(locationMapping.get(location).toString());
         ((HtmlSelect) selectCenterPage.getElementById("VisaCategoryId")).setDefaultValue(visaCategoryMapping.get("WHV").toString());
         HtmlPage afterSelectCenter = ((HtmlSubmitInput) selectCenterPage.getElementById("btnContinue")).click();
-        // webClient.waitForBackgroundJavaScript(TIME_OUT);
+        /**
+         * 当前页面有JS一定要执行
+         * 可查看是不是有post／get请求
+         */
+        webClient.waitForBackgroundJavaScript(TIME_OUT);
         webClient.getOptions().setJavaScriptEnabled(false);
+//        webClient.waitForBackgroundJavaScript(TIME_OUT);
+
         return afterSelectCenter;
     }
 

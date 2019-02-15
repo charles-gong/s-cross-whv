@@ -4,13 +4,18 @@ package com.whv.util;
 import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.CollectingAlertHandler;
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
+import com.gargoylesoftware.htmlunit.HttpMethod;
 import com.gargoylesoftware.htmlunit.NicelyResynchronizingAjaxController;
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
 import com.gargoylesoftware.htmlunit.WebClient;
+import com.gargoylesoftware.htmlunit.WebRequest;
+import com.gargoylesoftware.htmlunit.WebResponse;
 import com.gargoylesoftware.htmlunit.html.HtmlAnchor;
 import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlHiddenInput;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
+import com.gargoylesoftware.htmlunit.util.NameValuePair;
 
 import org.apache.log4j.Logger;
 import org.jsoup.Connection;
@@ -22,6 +27,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -93,6 +99,129 @@ public class CrackWhv {
                                         }
                                         currentStep.set(2);
                                         currentResponse = afterLogin;
+
+                                        WebRequest webRequest;
+                                        WebResponse webResponse;
+
+                                        afterPageAjax(webClient);
+
+                                        HtmlAnchor scheduleItem = (HtmlAnchor) currentResponse.getByXPath("//li[@class='inactive-link']/a").get(0);
+                                        String nextUrl = "https://online.vfsglobal.com" + scheduleItem.getAttribute("href");
+                                        webRequest = new WebRequest(new URL(nextUrl));
+                                        webRequest.setHttpMethod(HttpMethod.GET);
+                                        webRequest.getAdditionalHeaders().put("Referer", "https://online.vfsglobal.com/Global-Appointment/Home/Index");
+                                        webRequest.getAdditionalHeaders().put("Upgrade-Insecure-Requests", "1");
+                                        webResponse = webClient.loadWebResponse(webRequest);
+                                        // currentResponse = new HtmlPage(webResponse, currentResponse.getEnclosingWindow());
+
+
+                                  /*      // sending https://online.vfsglobal.com/Global-Appointment/Account/GetMissionCountryDesclaimer
+                                        webRequest = new WebRequest(new URL("https://online.vfsglobal.com/Global-Appointment/Account/GetMissionCountryDesclaimer"));
+                                        webRequest.setHttpMethod(HttpMethod.POST);
+                                        webRequest.getAdditionalHeaders().put("Referer", nextUrl);
+                                        webRequest.getAdditionalHeaders().put("X-Requested-With","XMLHttpRequest");
+                                        webRequest.setRequestParameters(Arrays.asList(new NameValuePair("missionid", "22"), new NameValuePair("countryid", "11")));
+                                        webResponse = webClient.loadWebResponse(webRequest);
+
+                                        afterPageAjax(webClient);
+
+                                        // sending https://online.vfsglobal.com/Global-Appointment/Account/CheckSeatAllotment
+                                        webRequest = new WebRequest(new URL("https://online.vfsglobal.com/Global-Appointment/Account/CheckSeatAllotment"));
+                                        webRequest.setHttpMethod(HttpMethod.POST);
+                                        webRequest.setRequestParameters(Arrays.asList(
+                                                new NameValuePair("missionid", "22"),
+                                                new NameValuePair("countryid", "11"),
+                                                new NameValuePair("LocationId", "162"),
+                                                new NameValuePair("Location", "Australia Visa Application Centre-Shanghai")));
+                                        webResponse = webClient.loadWebResponse(webRequest);
+
+                                        // sending https://online.vfsglobal.com/Global-Appointment/Account/GetEarliestVisaSlotDate
+                                        webRequest = new WebRequest(new URL("https://online.vfsglobal.com/Global-Appointment/Account/GetEarliestVisaSlotDate"));
+                                        webRequest.setHttpMethod(HttpMethod.POST);
+                                        webRequest.setRequestParameters(Arrays.asList(
+                                                new NameValuePair("missionid", "22"),
+                                                new NameValuePair("countryid", "11"),
+                                                new NameValuePair("LocationId", "162"),
+                                                new NameValuePair("VisaCategoryId", "416")));
+                                        webResponse = webClient.loadWebResponse(webRequest);*/
+
+                                        // sending https://online.vfsglobal.com/Global-Appointment/Home/SelectVAC
+//                                        webRequest = new WebRequest(new URL("https://online.vfsglobal.com/Global-Appointment/Home/SelectVAC"));
+//                                        webRequest.setHttpMethod(HttpMethod.POST);
+//                                        webRequest.setRequestParameters(Arrays.asList(
+//                                                new NameValuePair("__RequestVerificationToken", token.toString()),
+//                                                new NameValuePair("paraMissionId", "22"),
+//                                                new NameValuePair("paramCountryId", "11"),
+//                                                new NameValuePair("paramCenterId", ""),
+//                                                new NameValuePair("masterMissionName", "Australia"),
+//                                                new NameValuePair("masterCountryName", "China"),
+//                                                new NameValuePair("IsApplicationTypeEnabled", "False"),
+//                                                new NameValuePair("MainVisaCategoryDisplayEnabled", "False"),
+//                                                new NameValuePair("MissionCountryLocationJSON", "[{\"Id\":0,\"Name\":\"Select Visiting Country\",\"CountryJEs\":null,\"ChildMissionJEs\":null},{\"Id\":22,\"Name\":\"Australia\",\"CountryJEs\":[{\"Locations\":null,\"ShowDocumentCheckList\":false,\"MissionId\":0,\"VisaCategories\":null,\"Id\":0,\"Name\":\"Select Residing Country\"},{\"Locations\":[{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"}],\"TypeId\":0,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":0,\"Name\":\"Select Centre\"},{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"},{\"SubVisaCategories\":null,\"Id\":419,\"Name\":\"Biometrics Enrolment\"},{\"SubVisaCategories\":null,\"Id\":418,\"Name\":\"General Visa\"}],\"TypeId\":1,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":161,\"Name\":\"Australia Visa Application Centre - Guangzhou\"},{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"},{\"SubVisaCategories\":null,\"Id\":419,\"Name\":\"Biometrics Enrolment\"},{\"SubVisaCategories\":null,\"Id\":418,\"Name\":\"General Visa\"}],\"TypeId\":1,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":160,\"Name\":\"Australia Visa Application Centre-Beijing\"},{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"},{\"SubVisaCategories\":null,\"Id\":419,\"Name\":\"Biometrics Enrolment\"},{\"SubVisaCategories\":null,\"Id\":418,\"Name\":\"General Visa\"},{\"SubVisaCategories\":null,\"Id\":416,\"Name\":\"Work and Holiday Visa\"}],\"TypeId\":1,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":163,\"Name\":\"Australia Visa Application Centre-Chengdu\"},{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"},{\"SubVisaCategories\":null,\"Id\":419,\"Name\":\"Biometrics Enrolment\"},{\"SubVisaCategories\":null,\"Id\":418,\"Name\":\"General Visa\"},{\"SubVisaCategories\":null,\"Id\":416,\"Name\":\"Work and Holiday Visa\"}],\"TypeId\":1,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":162,\"Name\":\"Australia Visa Application Centre-Shanghai\"}],\"ShowDocumentCheckList\":false,\"MissionId\":0,\"VisaCategories\":null,\"Id\":11,\"Name\":\"China\"}],\"ChildMissionJEs\":[{\"ParentMissionId\":0,\"Id\":0,\"Name\":\"Select new NameValuePair(\"Sub-Mission\"}]}]"),
+//                                                new NameValuePair("MissionId", "22"),
+//                                                new NameValuePair("CountryId", "11"),
+//                                                new NameValuePair("LocationId", "162"),
+//                                                new NameValuePair("LocationId", "0"),
+//                                                new NameValuePair("VisaCategoryId", "416"),
+//                                                new NameValuePair("AppointmentType", "PrimeAppointment"),
+//                                                new NameValuePair("MultiplePaymentModes", "PrepaymentAtBank")
+//                                        ));
+//                                        webResponse = webClient.loadWebResponse(webRequest);
+
+                                        // sending https://online.vfsglobal.com/Global-Appointment/Applicant/ApplicantList
+                                        webRequest = new WebRequest(new URL("https://online.vfsglobal.com/Global-Appointment/Applicant/ApplicantList"));
+                                        webRequest.setHttpMethod(HttpMethod.GET);
+                                        webRequest.setAdditionalHeader("Referer", nextUrl);
+                                        webResponse = webClient.loadWebResponse(webRequest);
+                                        //currentResponse = new HtmlPage(webResponse, currentResponse.getEnclosingWindow());
+
+                                        afterPageAjax(webClient);
+
+                                        // https://online.vfsglobal.com/Global-Appointment/Applicant/AddApplicant
+                                        webRequest = new WebRequest(new URL("https://online.vfsglobal.com/Global-Appointment/Applicant/AddApplicant"));
+                                        webRequest.setHttpMethod(HttpMethod.POST);
+                                        webRequest.setRequestParameters(Arrays.asList(
+                                                new NameValuePair("__RequestVerificationToken", token.toString()),
+                                                new NameValuePair("IsVAFValidationEnabled", "False"),
+                                                new NameValuePair("IsEndorsedChildEnabled", "False"),
+                                                new NameValuePair("NoOfEndorsedChild", "0"),
+                                                new NameValuePair("IsEndorsedChild", "False"),
+                                                new NameValuePair("EnableValidatePaymentAtCashCounter", "False"),
+                                                new NameValuePair("Currency", ""),
+                                                new NameValuePair("Amount", "0"),
+                                                new NameValuePair("IsAppointmentExists", "False"),
+                                                new NameValuePair("CancellationCount", "0"),
+                                                new NameValuePair("MissionId", "0"),
+                                                new NameValuePair("CountryId", "0"),
+                                                new NameValuePair("ShowNextAvailableSlot", "False"),
+                                                new NameValuePair("ShowLegalizationDocuments", "False"),
+                                                new NameValuePair("IsEndrosedChildDisclaimerEnabled", "True"),
+                                                new NameValuePair("EndrosedChildAge", "0"),
+                                                new NameValuePair("IsApplicantCompanyInfoRequired", "False"),
+                                                new NameValuePair("StateJsonString", "[{\"stateId\":0,\"Municipalities\":null,\"Pincodes\":null,\"Id\":0,\"Name\":\"Select Province\"}]"),
+                                                new NameValuePair("CanShowAdditionalFields", "False"),
+                                                new NameValuePair("ApplicationTypeId", "0"),
+                                                new NameValuePair("PassportNumber", "E100100"),
+                                                new NameValuePair("DateOfBirth", "11/01/1988"),
+                                                new NameValuePair("PassportExpiryDate", "29/12/2022"),
+                                                new NameValuePair("NationalityId", "165"),
+                                                new NameValuePair("FirstName", "GRACE"),
+                                                new NameValuePair("LastName", "LI"),
+                                                new NameValuePair("GenderId", "2"),
+                                                new NameValuePair("DialCode", "+86"),
+                                                new NameValuePair("Mobile", "1515151515151"),
+                                                new NameValuePair("EmailId", "glmlyf@163.com")
+                                        ));
+                                        webResponse = webClient.loadWebResponse(webRequest);
+
+                                        //sending https://online.vfsglobal.com/Global-Appointment/Applicant/ApplicantList
+                                        webRequest = new WebRequest(new URL("https://online.vfsglobal.com/Global-Appointment/Applicant/ApplicantList"));
+                                        webRequest.setHttpMethod(HttpMethod.GET);
+                                        webResponse = webClient.loadWebResponse(webRequest);
+                                        currentResponse = new HtmlPage(webResponse, currentResponse.getEnclosingWindow());
+                                        HtmlPage afterSelectCenter = ((HtmlSubmitInput) currentResponse.getElementById("btnContinue")).click();
+
+                                        System.out.println(1);
                                     }
                                     if (currentStep.get() == 2) {
                                         List<HtmlElement> htmlElementList = currentResponse.getByXPath("//div[@class='AccordionPanelContent']//a");
@@ -161,6 +290,18 @@ public class CrackWhv {
 
     private static void logout(String token) {
 
+    }
+
+    private static void afterPageAjax(WebClient webClient) throws Exception {
+        // sending https://online.vfsglobal.com/Global-Appointment/Home/DownTimeDetails
+        WebRequest webRequest = new WebRequest(new URL("https://online.vfsglobal.com/Global-Appointment/Home/DownTimeDetails"));
+        webRequest.setHttpMethod(HttpMethod.POST);
+        webRequest.setRequestParameters(Arrays.asList(new NameValuePair("languageId", "0")));
+        WebResponse webResponse = webClient.loadWebResponse(webRequest);
+        //
+        webRequest = new WebRequest(new URL("https://online.vfsglobal.com/Global-Appointment/Account/SetMissionAndCountry"));
+        webRequest.setHttpMethod(HttpMethod.POST);
+        webResponse = webClient.loadWebResponse(webRequest);
     }
 
     /**
