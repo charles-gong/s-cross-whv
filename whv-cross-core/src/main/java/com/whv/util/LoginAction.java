@@ -39,12 +39,8 @@ public class LoginAction {
         try {
 
             BufferedImage img = ((HtmlImage) previousResponse.getElementById("CaptchaImage")).getImageReader().read(0);
-            String name = "./" + UUID.randomUUID() + ".png";
-            File outputFile = new File(name);
-            ImageIO.write(img, "png", outputFile);
-            BufferedImage originalImage = ImageIO.read(new File(name));
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ImageIO.write(originalImage, "jpg", baos);
+            ImageIO.write(img, "png", baos);
             baos.flush();
             //使用toByteArray()方法转换成字节数组
             results = baos.toByteArray();

@@ -7,16 +7,14 @@ import com.gargoylesoftware.htmlunit.util.NameValuePair;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static com.whv.util.ScheduleAppointment.TIME_OUT;
 
@@ -30,9 +28,6 @@ public class CrackWhv {
     private static final String LOGIN_URL = "https://online.vfsglobal.com/Global-Appointment";
 
     public static final Map<String, WebResponse> jsResponseMap = new ConcurrentHashMap<>();
-
-    public static final String jsResourcePath = CrackWhv.class.getClassLoader().getResource("js").getPath();
-    public static final String accountResourcePath = CrackWhv.class.getClassLoader().getResource("account").getPath();
 
     private static final Map<String, Integer> locationMapping = new HashMap<String, Integer>() {{
         put("guangzhou", 161);
@@ -185,23 +180,22 @@ public class CrackWhv {
                             LOGGER.info(String.format("##########[ %s ] post applicant information for [ %s ] un-successfully!##########", loginAccount.getName(), applicant.getFirstName()));
                         }
                     }
+                    String folder = path.toString();
                     if (currentStep.get() == 6) {
                         checkPage = postApplicantList(currentResponse, webClient, loginAccount, token, applicant);
                         if (!checkIfReturnPageHasException(checkPage)) {
 
-                            FileUtils.write(new File(path.append("/").append("Final_Calendar.html").toString()), checkPage.asXml(), "UTF-8");
+                            FileUtils.write(new File(folder + "/" + "Final_Calendar.html"), checkPage.asXml(), "UTF-8");
+
                             LOGGER.info(String.format("----[ %s ] post applicant list to final calendar successfully and file has been saved to [ %s ] ----", loginAccount.getName(), path.toString()));
                             currentResponse = checkPage;
                             currentStep.set(7);
-                            if (currentStep.get() == stoppedAt.get()) {
-                                LOGGER.info(String.format("[ %s ] stopped at step [ %d ]", loginAccount.getName(), currentStep.get()));
-                                break;
-                            }
                         }
                     }
 
                     if (currentStep.get() == 7) {
                         checkPage = ScheduleAppointment.submitFinalCalendar(currentResponse, webClient, loginAccount);
+                        FileUtils.write(new File(folder + "/" + "Confirm.html"), checkPage.asXml(), "UTF-8");
                         if (!checkIfReturnPageHasException(checkPage)) {
                             currentResponse = checkPage;
                             currentStep.set(8);
@@ -210,6 +204,7 @@ public class CrackWhv {
                     if (currentStep.get() == 8) {
                         checkPage = ScheduleAppointment.submitConfirmPage(currentResponse, webClient, loginAccount);
                         if (!checkIfReturnPageHasException(checkPage)) {
+                            FileUtils.write(new File(folder + "/" + "Check.html"), checkPage.asXml(), "UTF-8");
                             currentResponse = checkPage;
                             currentStep.set(9);
                             LOGGER.info(String.format("----[ %s ] with reference number [ %s ] has been submitted successfully!----", applicant.getFirstName(), applicant.getUrn()));
@@ -364,7 +359,7 @@ public class CrackWhv {
 //        webClient.getOptions().setJavaScriptEnabled(true);
 //        WebResponse webResponse = webClient.loadWebResponse(webRequest);
 //        currentResponse = HTMLParser.parseHtml(webResponse, webClient.getCurrentWindow());
-
+        LOGGER.info(String.format("------------Login account [ %s ] has reference number [ %s ]------------", loginAccount.getName(), URN));
         webClient.getOptions().setJavaScriptEnabled(true);
         HtmlPage webResponse = ((HtmlSubmitInput) currentResponse.getByXPath("//input[@class='submitbtn']").get(0)).click();
         webClient.waitForBackgroundJavaScript(TIME_OUT);
@@ -380,13 +375,14 @@ public class CrackWhv {
     }
 
     private static List<ApplicantInfo> loadApplicant(String path) {
-        if (path == null) {
-            path = accountResourcePath + "/applicants.txt";
+        BufferedReader bufferedReader = null;
+        if (path == "") {
+            bufferedReader = new BufferedReader(new InputStreamReader((CrackWhv.class.getClassLoader().getResourceAsStream("account/applicants.txt"))));
         }
         List<ApplicantInfo> applicantInfoList = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(new File(path)))) {
+        try {
             String line = "";
-            while ((line = br.readLine()) != null) {
+            while ((line = bufferedReader.readLine()) != null) {
                 if (!line.startsWith("#")) {
                     String[] columns = line.trim().split(",");
                     ApplicantInfo applicantInfo = new ApplicantInfo();
@@ -414,41 +410,63 @@ public class CrackWhv {
 
 
     private static void loadLoginAccounts(String path) {
-        if (path == null) {
-            path = accountResourcePath + "/login_account.txt";
-        }
-        try (BufferedReader br = new BufferedReader(new FileReader(new File(path)))) {
+        BufferedReader bufferedReader = null;
+        if (path == "") {
+            bufferedReader = new BufferedReader(new InputStreamReader((CrackWhv.class.getClassLoader().getResourceAsStream("account/login_account.txt"))));
             String line = "";
-            while ((line = br.readLine()) != null) {
-                String[] accountInfos = line.split(",");
-                LoginAccount loginAccount = new LoginAccount();
-                loginAccount.setName(accountInfos[0].trim());
-                loginAccount.setPassword(accountInfos[1].trim());
-                queue.put(loginAccount);
+            try {
+                while ((line = bufferedReader.readLine()) != null) {
+                    String[] accountInfos = line.split(",");
+                    LoginAccount loginAccount = new LoginAccount();
+                    loginAccount.setName(accountInfos[0].trim());
+                    loginAccount.setPassword(accountInfos[1].trim());
+                    queue.put(loginAccount);
+                }
+            } catch (Exception e) {
+                LOGGER.error(e);
             }
-        } catch (Exception e) {
-            LOGGER.error(e);
         }
+
     }
 
     private static void loadJsCache() {
-        File jsFolder = new File(jsResourcePath);
-        Arrays.stream(jsFolder.listFiles()).parallel().forEach(jsFile -> {
+        List<String> cacheFileNames = new ArrayList<>();
+        cacheFileNames.add("analytics.js");
+        cacheFileNames.add("bootstrap.min.js");
+        cacheFileNames.add("bootstrap-datetimepicker.min.js");
+        cacheFileNames.add("common.js");
+        cacheFileNames.add("finalCalendar.js");
+        cacheFileNames.add("fullcalendar.js");
+        cacheFileNames.add("global-appointment-services.js");
+        cacheFileNames.add("gtag_js.js");
+        cacheFileNames.add("jquery.countdown.js");
+        cacheFileNames.add("jquery.jqtransform.js");
+        cacheFileNames.add("jquery.magnific-popup.min.js");
+        cacheFileNames.add("jquery.modalbox-1.5.0-min.js");
+        cacheFileNames.add("jquery.selectBox.js");
+        cacheFileNames.add("jquery-3.3.1.min.js");
+        cacheFileNames.add("jquery-migrate-3.0.1.js");
+        cacheFileNames.add("jquery-ui.js");
+        cacheFileNames.add("jqueryval.js");
+        cacheFileNames.add("moment.min.js");
+        cacheFileNames.add("SpryAccordion.js");
+        cacheFileNames.parallelStream().forEach(fileName -> {
             try {
-                String content = FileUtils.readFileToString(jsFile, "UTF-8");
+                String content = new BufferedReader(new InputStreamReader(CrackWhv.class.getClassLoader().getResourceAsStream("js/" + fileName)))
+                        .lines().collect(Collectors.joining(System.lineSeparator()));
                 // jquery
                 List<NameValuePair> responseHeaders = new ArrayList<>();
                 responseHeaders.add(new NameValuePair("content-type", "text/javascript"));
                 WebResponseData data = new WebResponseData(content.getBytes("UTF-8"),
                         200, "OK", responseHeaders);
-                WebResponse response = new WebResponse(data, new WebRequest(new URL("https://online.vfsglobal.com/Global-Appointment/Scripts/" + jsFile.getName())), System.currentTimeMillis());
-                if (jsFile.getName().equals("gtag_js")) {
+                WebResponse response = new WebResponse(data, new WebRequest(new URL("https://online.vfsglobal.com/Global-Appointment/Scripts/" + fileName)), System.currentTimeMillis());
+                if (fileName.equals("gtag_js")) {
                     jsResponseMap.put("gtag/js", response);
                 } else {
-                    jsResponseMap.put(jsFile.getName(), response);
+                    jsResponseMap.put(fileName, response);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                LOGGER.error(e);
             }
         });
     }

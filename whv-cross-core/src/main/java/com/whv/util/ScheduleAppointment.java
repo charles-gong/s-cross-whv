@@ -33,8 +33,8 @@ public class ScheduleAppointment {
             if (month == 2) { // skip to March.
                 HtmlSpan htmlSpan = (HtmlSpan) afterSubmitApplicantList.getByXPath("//td[@class='fc-header-right']/span").get(0);
                 afterSubmitApplicantList = htmlSpan.click();
-                month++;
             }
+            month++;
             LOGGER.info(String.format("--------------  Loading dates for month [ %d ] successfully! -------------- ", month));
             List<HtmlTableDataCell> tds = afterSubmitApplicantList.getByXPath("//div[@class='fc-content']//tbody//td");
             List<HtmlTableDataCell> availableList = tds.parallelStream().filter(td -> td.getAttribute("style").contains("background-color: rgb(188,237,145)")).collect(Collectors.toList());
@@ -69,9 +69,13 @@ public class ScheduleAppointment {
     }
 
     public static HtmlPage submitConfirmPage(HtmlPage afterSubmitCalendar, WebClient webClient, CrackWhv.LoginAccount loginAccount) throws IOException {
-        HtmlCheckBoxInput htmlCheckBoxInput = (HtmlCheckBoxInput) afterSubmitCalendar.getByXPath("//input[@type='checkbox']").get(0);
-        htmlCheckBoxInput.click();
-
+        List<HtmlElement> checkBoxList = afterSubmitCalendar.getByXPath("//input[@type='checkbox']");
+        if (checkBoxList == null || checkBoxList.size() == 0) {
+            LOGGER.info(String.format("-------------- [ %s ] cannot find checkbox in confirm page! -------------- ", loginAccount.getName()));
+        } else {
+            HtmlCheckBoxInput htmlCheckBoxInput = (HtmlCheckBoxInput) checkBoxList.get(0);
+            htmlCheckBoxInput.click();
+        }
         //choose submit
         HtmlPage afterConfirm = null;
         List<HtmlElement> htmlElementList = afterSubmitCalendar.getByXPath("//a[@class='submitbtn']");
@@ -79,8 +83,13 @@ public class ScheduleAppointment {
             afterConfirm = ((HtmlAnchor) htmlElementList.get(0)).click();
             LOGGER.info(String.format("-------------- [ %s ] confirm successfully! -------------- ", loginAccount.getName()));
         } else {
-            afterConfirm = ((HtmlSubmitInput) afterSubmitCalendar.getByXPath("//input[@class='submitbtn']").get(0)).click();
-            LOGGER.info(String.format("-------------- [ %s ] confirm successfully! -------------- ", loginAccount.getName()));
+            List<HtmlElement> submitInputList = afterSubmitCalendar.getByXPath("//input[@class='submitbtn']");
+            if (submitInputList == null || submitInputList.size() == 0) {
+                LOGGER.info(String.format("-------------- [ %s ] cannot find submit button in confirm page! -------------- ", loginAccount.getName()));
+            } else {
+                afterConfirm = ((HtmlSubmitInput) submitInputList.get(0)).click();
+                LOGGER.info(String.format("-------------- [ %s ] confirm successfully! -------------- ", loginAccount.getName()));
+            }
         }
         webClient.waitForBackgroundJavaScript(TIME_OUT);
 
