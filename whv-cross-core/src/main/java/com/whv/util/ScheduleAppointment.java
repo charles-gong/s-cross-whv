@@ -2,6 +2,7 @@ package com.whv.util;
 
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.*;
+import com.whv.entity.LoginAccount;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -26,7 +27,7 @@ public class ScheduleAppointment {
      * @return
      * @throws IOException
      */
-    public static HtmlPage submitFinalCalendar(HtmlPage afterSubmitApplicantList, WebClient webClient, CrackWhv.LoginAccount loginAccount) throws IOException {
+    public static HtmlPage submitFinalCalendar(HtmlPage afterSubmitApplicantList, WebClient webClient, String accountName) throws IOException {
         HtmlPage afterSubmitCalendar = null;
         int month = 2;
         while (afterSubmitApplicantList != null) {
@@ -43,7 +44,7 @@ public class ScheduleAppointment {
                 afterSubmitApplicantList = htmlSpan.click();
             } else {
                 availableList.get(0).click();
-                LOGGER.info(String.format("-------------- [ %s ] Choosing a date successfully! -------------- ", loginAccount.getName()));
+                LOGGER.info(String.format("-------------- [ %s ] Choosing a date successfully! -------------- ", accountName));
                 // choose time.
                 List<HtmlElement> htmlElementList = afterSubmitApplicantList.getElementById("TimeBandsDiv").getElementsByTagName("input");
                 if (htmlElementList != null && htmlElementList.size() > 0) {
@@ -56,7 +57,7 @@ public class ScheduleAppointment {
 
                     if (htmlRadioButtonInputList.size() > 4) {
                         htmlRadioButtonInputList.get(4).click();
-                        LOGGER.info(String.format("-------------- [ %s ] Choosing a time range successfully! -------------- ", loginAccount.getName()));
+                        LOGGER.info(String.format("-------------- [ %s ] Choosing a time range successfully! -------------- ", accountName));
                     }
                 }
                 HtmlSubmitInput htmlSubmitInput = (HtmlSubmitInput) afterSubmitApplicantList.getElementById("btnConfirm");
@@ -68,10 +69,10 @@ public class ScheduleAppointment {
         return afterSubmitCalendar;
     }
 
-    public static HtmlPage submitConfirmPage(HtmlPage afterSubmitCalendar, WebClient webClient, CrackWhv.LoginAccount loginAccount) throws IOException {
+    public static HtmlPage submitConfirmPage(HtmlPage afterSubmitCalendar, WebClient webClient, String accountName) throws IOException {
         List<HtmlElement> checkBoxList = afterSubmitCalendar.getByXPath("//input[@type='checkbox']");
         if (checkBoxList == null || checkBoxList.size() == 0) {
-            LOGGER.info(String.format("-------------- [ %s ] cannot find checkbox in confirm page! -------------- ", loginAccount.getName()));
+            LOGGER.info(String.format("-------------- [ %s ] cannot find checkbox in confirm page! -------------- ", accountName));
         } else {
             HtmlCheckBoxInput htmlCheckBoxInput = (HtmlCheckBoxInput) checkBoxList.get(0);
             htmlCheckBoxInput.click();
@@ -81,14 +82,14 @@ public class ScheduleAppointment {
         List<HtmlElement> htmlElementList = afterSubmitCalendar.getByXPath("//a[@class='submitbtn']");
         if (htmlElementList != null && htmlElementList.size() > 0) {
             afterConfirm = ((HtmlAnchor) htmlElementList.get(0)).click();
-            LOGGER.info(String.format("-------------- [ %s ] confirm successfully! -------------- ", loginAccount.getName()));
+            LOGGER.info(String.format("-------------- [ %s ] confirm successfully! -------------- ", accountName));
         } else {
             List<HtmlElement> submitInputList = afterSubmitCalendar.getByXPath("//input[@class='submitbtn']");
             if (submitInputList == null || submitInputList.size() == 0) {
-                LOGGER.info(String.format("-------------- [ %s ] cannot find submit button in confirm page! -------------- ", loginAccount.getName()));
+                LOGGER.info(String.format("-------------- [ %s ] cannot find submit button in confirm page! -------------- ", accountName));
             } else {
                 afterConfirm = ((HtmlSubmitInput) submitInputList.get(0)).click();
-                LOGGER.info(String.format("-------------- [ %s ] confirm successfully! -------------- ", loginAccount.getName()));
+                LOGGER.info(String.format("-------------- [ %s ] confirm successfully! -------------- ", accountName));
             }
         }
         webClient.waitForBackgroundJavaScript(TIME_OUT);

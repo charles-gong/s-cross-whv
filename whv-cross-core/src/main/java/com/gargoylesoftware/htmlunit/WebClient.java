@@ -65,9 +65,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
-import java.util.function.BiConsumer;
 
-import com.whv.util.CrackWhv;
+import com.whv.util.CrackWhvFromRegister;
 import net.sourceforge.htmlunit.corejs.javascript.ScriptableObject;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.StringUtils;
@@ -218,7 +217,7 @@ public class WebClient implements Serializable, AutoCloseable {
                     window.clearComputedStyles();
                 }
 
-                return (P)page;
+                return (P) page;
             }
 
             if (page.isHtmlPage()) {
@@ -228,7 +227,7 @@ public class WebClient implements Serializable, AutoCloseable {
                         LOG.debug("The registered OnbeforeunloadHandler rejected to load a new page.");
                     }
 
-                    return (P)page;
+                    return (P) page;
                 }
             }
         }
@@ -242,7 +241,7 @@ public class WebClient implements Serializable, AutoCloseable {
         if ("javascript".equals(protocol)) {
             webResponse = this.makeWebResponseForJavaScriptUrl(webWindow, webRequest.getUrl(), webRequest.getCharset());
             if (webWindow.getEnclosedPage() != null && webWindow.getEnclosedPage().getWebResponse() == webResponse) {
-                return (P)webWindow.getEnclosedPage();
+                return (P) webWindow.getEnclosedPage();
             }
         } else {
             webResponse = this.loadWebResponse(webRequest);
@@ -255,7 +254,7 @@ public class WebClient implements Serializable, AutoCloseable {
         }
 
         this.throwFailingHttpStatusCodeExceptionIfNecessary(webResponse);
-        return (P)webWindow.getEnclosedPage();
+        return (P) webWindow.getEnclosedPage();
     }
 
     public <P extends Page> P getPage(WebWindow opener, String target, WebRequest params) throws FailingHttpStatusCodeException, IOException {
@@ -895,9 +894,14 @@ public class WebClient implements Serializable, AutoCloseable {
         }
 
         // check js response
-        for (String key : CrackWhv.jsResponseMap.keySet()) {
+        for (String key : CrackWhvFromRegister.jsResponseMap.keySet()) {
             if (url.toExternalForm().contains(key)) {
-                return CrackWhv.jsResponseMap.get(key);
+                // jquery
+                List<NameValuePair> responseHeaders = new ArrayList<>();
+                responseHeaders.add(new NameValuePair("content-type", "text/javascript"));
+                WebResponseData data = new WebResponseData(CrackWhvFromRegister.jsResponseMap.get(key).getBytes("UTF-8"),
+                        200, "OK", responseHeaders);
+                return new WebResponse(data, webRequest, System.currentTimeMillis());
             }
         }
 

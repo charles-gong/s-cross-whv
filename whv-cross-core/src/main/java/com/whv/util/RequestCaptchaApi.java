@@ -155,7 +155,7 @@ public class RequestCaptchaApi {
      * 注意2：
      * 退款仅在正常识别出结果后，无法通过网站验证的情况，请勿非法或者滥用，否则可能进行封号处理
      */
-    public CaptchaUtil.HttpResp Justice(String req_id) throws Exception {
+    public  static CaptchaUtil.HttpResp Justice(String req_id) throws Exception {
         long cur_tm = new Date().getTime() / 1000;     // 时间戳精确到秒。所以除以1000
         String stm = String.valueOf(cur_tm);
         String sign = CaptchaUtil.CalcSign(pd_id, pd_key, stm);

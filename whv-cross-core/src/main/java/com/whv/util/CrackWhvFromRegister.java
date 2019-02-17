@@ -4,10 +4,16 @@ package com.whv.util;
 import com.gargoylesoftware.htmlunit.*;
 import com.gargoylesoftware.htmlunit.html.*;
 import com.gargoylesoftware.htmlunit.util.NameValuePair;
+import com.whv.entity.AccountWithRegister;
+import com.whv.entity.ApplicantInfo;
+import com.whv.entity.LoginAccount;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -21,19 +27,19 @@ import static com.whv.util.ScheduleAppointment.TIME_OUT;
 /**
  * Created by gonglongmin on 2018/11/19.
  */
-public class CrackWhv {
+public class CrackWhvFromRegister {
 
-    public static final Logger LOGGER = Logger.getLogger(CrackWhv.class);
+    public static final Logger LOGGER = Logger.getLogger(CrackWhvFromRegister.class);
 
     private static final String LOGIN_URL = "https://online.vfsglobal.com/Global-Appointment";
 
-    public static final Map<String, WebResponse> jsResponseMap = new ConcurrentHashMap<>();
+    public static final Map<String, String> jsResponseMap = new ConcurrentHashMap<>();
 
     private static final Map<String, Integer> locationMapping = new HashMap<String, Integer>() {{
         put("guangzhou", 161);
         put("beijing", 160);
-        put("chengdu", 163);
         put("shanghai", 162);
+        put("chengdu", 163);
     }};
 
     private static final Map<String, Integer> visaCategoryMapping = new HashMap<String, Integer>() {{
@@ -44,6 +50,7 @@ public class CrackWhv {
 
 
     private static final ArrayBlockingQueue<LoginAccount> queue = new ArrayBlockingQueue<>(100);
+    private static final List<AccountWithRegister> registerInfo = Collections.synchronizedList(new ArrayList<>());
 
     public static void main(String[] args) throws Exception {
         String applicantInfoPath = "";
@@ -51,7 +58,6 @@ public class CrackWhv {
         Integer threads = null;
         AtomicInteger stoppedAt = new AtomicInteger(0);
         if (args.length == 0) {
-            threads = 1;
             stoppedAt.set(7);
         } else {
             applicantInfoPath = args[0];
@@ -59,15 +65,27 @@ public class CrackWhv {
             threads = Integer.valueOf(args[2]);
         }
 
-        loadJsCache();
+        jsResponseMap.putAll(LoadHandler.loadJsCache());
 
-        List<ApplicantInfo> applicants = loadApplicant(applicantInfoPath);
+        List<ApplicantInfo> applicants = LoadHandler.loadApplicant(applicantInfoPath);
+        List<LoginAccount> loginAccountList = LoadHandler.loadLoginAccounts(loginAccountInfoPath);
 
-        loadLoginAccounts(loginAccountInfoPath);
+        for (LoginAccount loadLoginAccount : loginAccountList) {
+            queue.put(loadLoginAccount);
+        }
+        if (threads == null) {
+            threads = loginAccountList.size();
+        }
 
-        ForkJoinPool forkJoinPool = new ForkJoinPool(threads);
+        ForkJoinPool forkJoinPool = new ForkJoinPool(applicants.size());
         forkJoinPool.submit(() -> applicants.parallelStream().forEach(applicant -> {
-            LoginAccount loginAccount = queue.peek();
+            LOGGER.info("Go for " + applicant.getFirstName());
+            LoginAccount loginAccount = null;
+            try {
+                loginAccount = queue.take();
+            } catch (Exception e) {
+                LOGGER.error("Take login account from the queue occurs an error", e);
+            }
             StringBuffer path = new StringBuffer("./");
             path.append(loginAccount.getName());
             File loginAccountFolder = new File(path.toString());
@@ -80,14 +98,21 @@ public class CrackWhv {
             if (!applicantFolder.exists()) {
                 applicantFolder.mkdir();
             }
-            WebClient webClient = new WebClient(BrowserVersion.CHROME);
             AtomicInteger currentStep = new AtomicInteger(0);
             HtmlPage currentResponse = null;
             StringBuffer token = new StringBuffer();
             String content = "";
-            while (currentStep.get() != 9) {
+            int loopCount = 0;
+            WebClient webClient = null;
+            while (currentStep.get() != 7) {
                 try {
+                    if (loopCount++ > 20) {
+                        FileUtils.write(new File(loginAccount.getName() + "-" + currentStep.get() + ".txt"), currentResponse.asXml(), "UTF-8");
+                        break;
+                    }
+
                     if (currentStep.get() == 0) {
+                        webClient = new WebClient(BrowserVersion.CHROME);
                         // 模拟一个浏览器
                         // 设置webClient的相关参数
                         webClient.setCssErrorHandler(new SilentCssErrorHandler());
@@ -118,25 +143,40 @@ public class CrackWhv {
                         token.append(((HtmlHiddenInput) (htmlPage.getByXPath("//input[@name='__RequestVerificationToken']").get(0))).getValueAttribute());
                         currentResponse = htmlPage;
                         currentStep.set(1);
-                        LOGGER.info(String.format("----[ %s ] load login page successfully!----", loginAccount.getName()));
                     }
                     HtmlPage checkPage = null;
                     StringBuffer referer = new StringBuffer();
                     if (currentStep.get() == 1) {
-                        checkPage = LoginAction.submitLoginAction(currentResponse, webClient, webClient.getCookies(new URL(LOGIN_URL)), loginAccount);
+                        StringBuffer reqId = new StringBuffer();
+                        checkPage = LoginAction.submitLoginAction(currentResponse, webClient, webClient.getCookies(new URL(LOGIN_URL)), loginAccount.getName(), loginAccount.getPassword(), token.toString(), reqId);
                         content = checkPage.asText();
-                        while (content.contains("Your account has been locked, please login after 2 minutes") || checkIfReturnPageHasException(checkPage)) {
+                        while (content.contains("Your account has been locked, please login after 2 minutes")) {
                             if (content.contains("Your account has been locked, please login after 2 minutes")) {
                                 LOGGER.error("Sleep 2 minutes, account is locked.");
                                 Thread.sleep(2 * 60 * 1001); // sleep 2mins
                             }
-                            checkPage = LoginAction.submitLoginAction(currentResponse, webClient, webClient.getCookies(new URL(LOGIN_URL)), loginAccount);
+                            reqId.setLength(0);
+                            checkPage = LoginAction.submitLoginAction(currentResponse, webClient, webClient.getCookies(new URL(LOGIN_URL)), loginAccount.getName(), loginAccount.getPassword(), token.toString(), reqId);
                             content = checkPage.asText();
                         }
-                        currentStep.set(2);
-                        currentResponse = checkPage;
-                        LOGGER.info(String.format("----[ %s ] login on successfully!----", loginAccount.getName()));
 
+                        if (content.contains("Registered Login") || content.contains("The verification words are incorrect") || checkIfReturnPageHasException(checkPage)) {
+                            if (content.contains("The verification words are incorrect")) {
+                                RequestCaptchaApi.Justice(reqId.toString());
+                            }
+                            LOGGER.error(content);
+                            currentStep.set(0);
+                            continue;
+                        }
+                        if (content == null || content.length() == 0) {
+                            currentStep.set(0);
+                            LOGGER.info(String.format("----[ %s ] login content is empty!----", loginAccount.getName()));
+                            continue;
+                        } else {
+                            currentStep.set(2);
+                            currentResponse = checkPage;
+                            LOGGER.info(String.format("----[ %s ] login on successfully!----", loginAccount.getName()));
+                        }
                     }
                     if (currentStep.get() == 2) {
                         checkPage = selectVac(currentResponse, webClient, referer);
@@ -144,7 +184,7 @@ public class CrackWhv {
                             currentResponse = checkPage;
                             LOGGER.info(String.format("----[ %s ] get select vac page successfully!----", loginAccount.getName()));
                             token.setLength(0);
-                            token.append(((HtmlHiddenInput) (currentResponse.getByXPath("//input[@name='__RequestVerificationToken']").get(0))).getValueAttribute());
+                            token.append(((HtmlHiddenInput) (currentResponse.getByXPath("//input[@name='__RequestVerificationToken']").get(1))).getValueAttribute());
                             currentStep.set(3);
                         }
                     }
@@ -163,7 +203,7 @@ public class CrackWhv {
                             LOGGER.info(String.format("----[ %s ] get add applicant page successfully!----", loginAccount.getName()));
                             currentResponse = checkPage;
                             token.setLength(0);
-                            token.append(((HtmlHiddenInput) (currentResponse.getByXPath("//input[@name='__RequestVerificationToken']").get(0))).getValueAttribute());
+                            token.append(((HtmlHiddenInput) (currentResponse.getByXPath("//input[@name='__RequestVerificationToken']").get(1))).getValueAttribute());
                             currentStep.set(5);
                         }
                     }
@@ -174,7 +214,7 @@ public class CrackWhv {
                             LOGGER.info(String.format("----[ %s ] post applicant information for [ %s ] successfully!----", loginAccount.getName(), applicant.getFirstName()));
                             currentResponse = checkPage;
                             token.setLength(0);
-                            token.append(((HtmlHiddenInput) (currentResponse.getByXPath("//input[@name='__RequestVerificationToken']").get(0))).getValueAttribute());
+                            token.append(((HtmlHiddenInput) (currentResponse.getByXPath("//input[@name='__RequestVerificationToken']").get(1))).getValueAttribute());
                             currentStep.set(6);
                         } else {
                             LOGGER.info(String.format("##########[ %s ] post applicant information for [ %s ] un-successfully!##########", loginAccount.getName(), applicant.getFirstName()));
@@ -183,7 +223,11 @@ public class CrackWhv {
                     String folder = path.toString();
                     if (currentStep.get() == 6) {
                         checkPage = postApplicantList(currentResponse, webClient, loginAccount, token, applicant);
-                        if (!checkIfReturnPageHasException(checkPage)) {
+                        if (checkPage == null || applicant.getUrn() == null) {
+                            currentStep.set(0);
+                            LOGGER.error("-----------No Reference Number---------------");
+                            continue;
+                        } else if (!checkIfReturnPageHasException(checkPage)) {
 
                             FileUtils.write(new File(folder + "/" + "Final_Calendar.html"), checkPage.asXml(), "UTF-8");
 
@@ -193,8 +237,21 @@ public class CrackWhv {
                         }
                     }
 
+
+//                    if (currentStep.get() == 7) {
+//                        AccountWithRegister accountWithRegister = new AccountWithRegister();
+//                        accountWithRegister.setName(loginAccount.getName());
+//                        accountWithRegister.setPassword(loginAccount.getPassword());
+//                        accountWithRegister.setUrn(applicant.getUrn());
+//                        registerInfo.add(accountWithRegister);
+//                        LOGGER.info(String.format("Account [ %s ] processed [ %s ] for [ %s ] [ %s ]", accountWithRegister.getName(), accountWithRegister.getUrn(), applicant.getFirstName(), applicant.getLastName()));
+//                        queue.put(loginAccount);
+//                        count.decrementAndGet();
+//                        logout(webClient, currentResponse);
+//
+//                    }
                     if (currentStep.get() == 7) {
-                        checkPage = ScheduleAppointment.submitFinalCalendar(currentResponse, webClient, loginAccount);
+                        checkPage = ScheduleAppointment.submitFinalCalendar(currentResponse, webClient, loginAccount.getName());
                         FileUtils.write(new File(folder + "/" + "Confirm.html"), checkPage.asXml(), "UTF-8");
                         if (!checkIfReturnPageHasException(checkPage)) {
                             currentResponse = checkPage;
@@ -202,7 +259,7 @@ public class CrackWhv {
                         }
                     }
                     if (currentStep.get() == 8) {
-                        checkPage = ScheduleAppointment.submitConfirmPage(currentResponse, webClient, loginAccount);
+                        checkPage = ScheduleAppointment.submitConfirmPage(currentResponse, webClient, loginAccount.getName());
                         if (!checkIfReturnPageHasException(checkPage)) {
                             FileUtils.write(new File(folder + "/" + "Check.html"), checkPage.asXml(), "UTF-8");
                             currentResponse = checkPage;
@@ -213,25 +270,45 @@ public class CrackWhv {
                         }
                     }
 
+                } catch (IndexOutOfBoundsException indexOutOfBoundsException) {
+                    try {
+                        FileUtils.write(new File(loginAccount.getName() + "-" + currentStep.get() + ".txt"), currentResponse.asXml(), "UTF-8");
+                    } catch (Exception e) {
+                        LOGGER.error("", e);
+                    }
                 } catch (FailingHttpStatusCodeException statusCodeException) {
                     if (statusCodeException.getStatusCode() == 503) {
-                        LOGGER.error(String.format("Current step is [ %d ], Exception status code is [ %d ]", currentStep.get(), statusCodeException.getStatusCode()));
-                        LOGGER.error(statusCodeException);
+                        LOGGER.error(String.format("Current step is [ %d ], Exception status code is [ %d ]", currentStep.get(), statusCodeException.getStatusCode()), statusCodeException);
                     }
                 } catch (Exception e) {
-                    //TODO get logout token to log out
-                    LOGGER.error(e);
+                    // never logout, the system can support only one account active
+                    LOGGER.error(String.format("Login account [ %s ] throws an exception at step [ %d ]", loginAccount.getName(), currentStep.get()), e);
                 }
             }
         })).get();
+
+        FileUtils.writeLines(new File("./register_info_file.txt"), registerInfo.stream().map(accountWithRegister -> accountWithRegister.getName()
+                .concat(",").concat(accountWithRegister.getPassword())
+                .concat(",").concat(accountWithRegister.getUrn()))
+                .collect(Collectors.toList()));
+    }
+
+    private static void logout(WebClient webClient, HtmlPage htmlPage) throws Exception {
+        HtmlHiddenInput htmlHiddenInput = (HtmlHiddenInput) htmlPage.getByXPath("//form[@id='logoutForm']//input[@name='__RequestVerificationToken']").get(0);
+        String token = htmlHiddenInput.getValueAttribute();
+        WebRequest webRequest = new WebRequest(new URL("https://online.vfsglobal.com/Global-Appointment/Account/LogOff"));
+        webRequest.setHttpMethod(HttpMethod.POST);
+        List<NameValuePair> requestParams = new ArrayList<>();
+        requestParams.add(new NameValuePair("__RequestVerificationToken", token));
+        webClient.loadWebResponse(webRequest);
     }
 
     private static HtmlPage selectVac(HtmlPage currentResponse, WebClient webClient, StringBuffer addApplicantUrl) throws IOException {
         /**
          * get application list page.
          */
-
-        HtmlAnchor scheduleItem = (HtmlAnchor) currentResponse.getByXPath("//li[@class='inactive-link']/a").get(0);
+        List<HtmlElement> htmlElementList = currentResponse.getByXPath("//div[@id='Accordion1']//li[@class='inactive-link']/a");
+        HtmlAnchor scheduleItem = (HtmlAnchor) htmlElementList.get(0);
         String url = "https://online.vfsglobal.com" + scheduleItem.getAttribute("href");
         addApplicantUrl.append(url);
         WebRequest webRequest = new WebRequest(new URL(addApplicantUrl.toString()));
@@ -259,7 +336,7 @@ public class CrackWhv {
         selectVacValuePairList.add(new NameValuePair("MissionCountryLocationJSON", "[{\"Id\":0,\"Name\":\"Select Visiting Country\",\"CountryJEs\":null,\"ChildMissionJEs\":null},{\"Id\":22,\"Name\":\"Australia\",\"CountryJEs\":[{\"Locations\":null,\"ShowDocumentCheckList\":false,\"MissionId\":0,\"VisaCategories\":null,\"Id\":0,\"Name\":\"Select Residing Country\"},{\"Locations\":[{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"}],\"TypeId\":0,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":0,\"Name\":\"Select Centre\"},{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"},{\"SubVisaCategories\":null,\"Id\":419,\"Name\":\"Biometrics Enrolment\"},{\"SubVisaCategories\":null,\"Id\":418,\"Name\":\"General Visa\"}],\"TypeId\":1,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":161,\"Name\":\"Australia Visa Application Centre - Guangzhou\"},{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"},{\"SubVisaCategories\":null,\"Id\":419,\"Name\":\"Biometrics Enrolment\"},{\"SubVisaCategories\":null,\"Id\":418,\"Name\":\"General Visa\"}],\"TypeId\":1,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":160,\"Name\":\"Australia Visa Application Centre-Beijing\"},{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"},{\"SubVisaCategories\":null,\"Id\":419,\"Name\":\"Biometrics Enrolment\"},{\"SubVisaCategories\":null,\"Id\":418,\"Name\":\"General Visa\"},{\"SubVisaCategories\":null,\"Id\":416,\"Name\":\"Work and Holiday Visa\"}],\"TypeId\":1,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":163,\"Name\":\"Australia Visa Application Centre-Chengdu\"},{\"VisaCategories\":[{\"SubVisaCategories\":null,\"Id\":0,\"Name\":\"Select Purpose of Travel\"},{\"SubVisaCategories\":null,\"Id\":419,\"Name\":\"Biometrics Enrolment\"},{\"SubVisaCategories\":null,\"Id\":418,\"Name\":\"General Visa\"},{\"SubVisaCategories\":null,\"Id\":416,\"Name\":\"Work and Holiday Visa\"}],\"TypeId\":1,\"IsGratisApplicable\":false,\"IsPaymentAtVac\":false,\"IsPaymentAtBankEnabled\":false,\"IsOnlinePaymentEnabled\":false,\"Id\":162,\"Name\":\"Australia Visa Application Centre-Shanghai\"}],\"ShowDocumentCheckList\":false,\"MissionId\":0,\"VisaCategories\":null,\"Id\":11,\"Name\":\"China\"}],\"ChildMissionJEs\":[{\"ParentMissionId\":0,\"Id\":0,\"Name\":\"Select new NameValuePair(\"Sub-Mission\"}]}]"));
         selectVacValuePairList.add(new NameValuePair("MissionId", "22"));
         selectVacValuePairList.add(new NameValuePair("CountryId", "11"));
-        //TODO need use location to confirm using which location id
+
         selectVacValuePairList.add(new NameValuePair("LocationId", locationMapping.get(location).toString()));
         selectVacValuePairList.add(new NameValuePair("LocationId", "0"));
         selectVacValuePairList.add(new NameValuePair("VisaCategoryId", "416"));
@@ -289,7 +366,7 @@ public class CrackWhv {
         return currentResponse;
     }
 
-    private static HtmlPage postAddApplicantPage(WebClient webClient, StringBuffer referer, StringBuffer token, ApplicantInfo applicantInfo) throws IOException {
+    public static HtmlPage postAddApplicantPage(WebClient webClient, StringBuffer referer, StringBuffer token, ApplicantInfo applicantInfo) throws IOException {
         WebRequest webRequest = new WebRequest(new URL("https://online.vfsglobal.com/Global-Appointment/Applicant/AddApplicant"));
         webRequest.setHttpMethod(HttpMethod.POST);
         webRequest.setAdditionalHeader("Host", "online.vfsglobal.com");
@@ -335,30 +412,14 @@ public class CrackWhv {
         return HTMLParser.parseHtml(webResponse, webClient.getCurrentWindow());
     }
 
-    private static HtmlPage postApplicantList(HtmlPage currentResponse, WebClient webClient, LoginAccount loginAccount, StringBuffer token, ApplicantInfo applicantInfo) throws IOException {
-        String URN = ((HtmlElement) currentResponse.getByXPath("//div[@class='mandatory-txt']//b").get(0)).getTextContent();
+    public static HtmlPage postApplicantList(HtmlPage currentResponse, WebClient webClient, LoginAccount loginAccount, StringBuffer token, ApplicantInfo applicantInfo) throws IOException {
+        List<HtmlElement> htmlElementList = currentResponse.getByXPath("//div[@class='rightpanel']//div[@class='mandatory-txt']//b");
+        if (htmlElementList == null || htmlElementList.size() == 0) {
+            return null;
+        }
+        String URN = (htmlElementList.get(0)).getTextContent();
         applicantInfo.setUrn(URN);
 
-//        WebRequest webRequest = new WebRequest(new URL("https://online.vfsglobal.com/Global-Appointment/Applicant/ApplicantList"));
-//        webRequest.setHttpMethod(HttpMethod.POST);
-//        webRequest.setAdditionalHeader("Host", "online.vfsglobal.com");
-//        webRequest.setAdditionalHeader("Origin", "https://online.vfsglobal.com");
-//        webRequest.setAdditionalHeader("Referer", "https://online.vfsglobal.com/Global-Appointment/Applicant/ApplicantList");
-//        webRequest.setAdditionalHeader("Upgrade-Insecure-Requests", "1");
-//        LOGGER.info(String.format("------------Login account [ %s ] has reference number [ %s ]------------", loginAccount.getName(), URN));
-//        List<NameValuePair> listNameValuePairs = new ArrayList<NameValuePair>() {{
-//            add(new NameValuePair("__RequestVerificationToken", token.toString()));
-//            add(new NameValuePair("URN", URN));
-//            add(new NameValuePair("EnablePaymentGatewayIntegration", "False"));
-//            add(new NameValuePair("IsVAFValidationEnabled", "False"));
-//            add(new NameValuePair("IsEndorsedChildChecked", "0"));
-//            add(new NameValuePair("NoOfEndorsedChild", "0"));
-//            add(new NameValuePair("IsEndorsedChild", "0"));
-//        }};
-//        webRequest.setRequestParameters(listNameValuePairs);
-//        webClient.getOptions().setJavaScriptEnabled(true);
-//        WebResponse webResponse = webClient.loadWebResponse(webRequest);
-//        currentResponse = HTMLParser.parseHtml(webResponse, webClient.getCurrentWindow());
         LOGGER.info(String.format("------------Login account [ %s ] has reference number [ %s ]------------", loginAccount.getName(), URN));
         webClient.getOptions().setJavaScriptEnabled(true);
         HtmlPage webResponse = ((HtmlSubmitInput) currentResponse.getByXPath("//input[@class='submitbtn']").get(0)).click();
@@ -366,236 +427,11 @@ public class CrackWhv {
         return webResponse;
     }
 
-    private static boolean checkIfReturnPageHasException(HtmlPage htmlPage) {
+    public static boolean checkIfReturnPageHasException(HtmlPage htmlPage) {
         String content = htmlPage.asText();
         if (content.contains("Exception") || content.contains("exception")) {
             return true;
         }
         return false;
     }
-
-    private static List<ApplicantInfo> loadApplicant(String path) {
-        BufferedReader bufferedReader = null;
-        if (path == "") {
-            bufferedReader = new BufferedReader(new InputStreamReader((CrackWhv.class.getClassLoader().getResourceAsStream("account/applicants.txt"))));
-        }
-        List<ApplicantInfo> applicantInfoList = new ArrayList<>();
-        try {
-            String line = "";
-            while ((line = bufferedReader.readLine()) != null) {
-                if (!line.startsWith("#")) {
-                    String[] columns = line.trim().split(",");
-                    ApplicantInfo applicantInfo = new ApplicantInfo();
-                    applicantInfo.setFirstName(columns[0].trim());
-                    applicantInfo.setLastName(columns[1].trim());
-                    applicantInfo.setPassportNumber(columns[2].trim());
-                    applicantInfo.setDateOfBirth(columns[3].trim());
-                    applicantInfo.setPassportExpiryDate(columns[4].trim());
-                    applicantInfo.setGenderId(columns[5].trim().equalsIgnoreCase("female") ? "2" : "1");
-                    applicantInfo.setDialCode(columns[6].trim());
-                    applicantInfo.setMobile(columns[7].trim());
-                    applicantInfo.setEmailId(columns[8].trim());
-                    applicantInfo.setLocation(columns[9].trim());
-                    applicantInfoList.add(applicantInfo);
-                }
-            }
-
-        } catch (IOException e) {
-            LOGGER.error(e);
-        }
-
-        return applicantInfoList;
-
-    }
-
-
-    private static void loadLoginAccounts(String path) {
-        BufferedReader bufferedReader = null;
-        if (path == "") {
-            bufferedReader = new BufferedReader(new InputStreamReader((CrackWhv.class.getClassLoader().getResourceAsStream("account/login_account.txt"))));
-            String line = "";
-            try {
-                while ((line = bufferedReader.readLine()) != null) {
-                    String[] accountInfos = line.split(",");
-                    LoginAccount loginAccount = new LoginAccount();
-                    loginAccount.setName(accountInfos[0].trim());
-                    loginAccount.setPassword(accountInfos[1].trim());
-                    queue.put(loginAccount);
-                }
-            } catch (Exception e) {
-                LOGGER.error(e);
-            }
-        }
-
-    }
-
-    private static void loadJsCache() {
-        List<String> cacheFileNames = new ArrayList<>();
-        cacheFileNames.add("analytics.js");
-        cacheFileNames.add("bootstrap.min.js");
-        cacheFileNames.add("bootstrap-datetimepicker.min.js");
-        cacheFileNames.add("common.js");
-        cacheFileNames.add("finalCalendar.js");
-        cacheFileNames.add("fullcalendar.js");
-        cacheFileNames.add("global-appointment-services.js");
-        cacheFileNames.add("gtag_js.js");
-        cacheFileNames.add("jquery.countdown.js");
-        cacheFileNames.add("jquery.jqtransform.js");
-        cacheFileNames.add("jquery.magnific-popup.min.js");
-        cacheFileNames.add("jquery.modalbox-1.5.0-min.js");
-        cacheFileNames.add("jquery.selectBox.js");
-        cacheFileNames.add("jquery-3.3.1.min.js");
-        cacheFileNames.add("jquery-migrate-3.0.1.js");
-        cacheFileNames.add("jquery-ui.js");
-        cacheFileNames.add("jqueryval.js");
-        cacheFileNames.add("moment.min.js");
-        cacheFileNames.add("SpryAccordion.js");
-        cacheFileNames.parallelStream().forEach(fileName -> {
-            try {
-                String content = new BufferedReader(new InputStreamReader(CrackWhv.class.getClassLoader().getResourceAsStream("js/" + fileName)))
-                        .lines().collect(Collectors.joining(System.lineSeparator()));
-                // jquery
-                List<NameValuePair> responseHeaders = new ArrayList<>();
-                responseHeaders.add(new NameValuePair("content-type", "text/javascript"));
-                WebResponseData data = new WebResponseData(content.getBytes("UTF-8"),
-                        200, "OK", responseHeaders);
-                WebResponse response = new WebResponse(data, new WebRequest(new URL("https://online.vfsglobal.com/Global-Appointment/Scripts/" + fileName)), System.currentTimeMillis());
-                if (fileName.equals("gtag_js")) {
-                    jsResponseMap.put("gtag/js", response);
-                } else {
-                    jsResponseMap.put(fileName, response);
-                }
-            } catch (Exception e) {
-                LOGGER.error(e);
-            }
-        });
-    }
-
-
-    static class ApplicantInfo {
-        private String firstName;
-        private String lastName;
-        private String passportNumber;
-        private String dateOfBirth;
-        private String passportExpiryDate;
-        private String genderId;
-        private String dialCode;
-        private String mobile;
-        private String emailId;
-        private String location;
-        private String urn;
-
-        public String getFirstName() {
-            return firstName;
-        }
-
-        public void setFirstName(String firstName) {
-            this.firstName = firstName;
-        }
-
-        public String getLastName() {
-            return lastName;
-        }
-
-        public void setLastName(String lastName) {
-            this.lastName = lastName;
-        }
-
-        public String getPassportNumber() {
-            return passportNumber;
-        }
-
-        public void setPassportNumber(String passportNumber) {
-            this.passportNumber = passportNumber;
-        }
-
-        public String getDateOfBirth() {
-            return dateOfBirth;
-        }
-
-        public void setDateOfBirth(String dateOfBirth) {
-            this.dateOfBirth = dateOfBirth;
-        }
-
-        public String getPassportExpiryDate() {
-            return passportExpiryDate;
-        }
-
-        public void setPassportExpiryDate(String passportExpiryDate) {
-            this.passportExpiryDate = passportExpiryDate;
-        }
-
-        public String getGenderId() {
-            return genderId;
-        }
-
-        public void setGenderId(String genderId) {
-            this.genderId = genderId;
-        }
-
-        public String getDialCode() {
-            return dialCode;
-        }
-
-        public void setDialCode(String dialCode) {
-            this.dialCode = dialCode;
-        }
-
-        public String getMobile() {
-            return mobile;
-        }
-
-        public void setMobile(String mobile) {
-            this.mobile = mobile;
-        }
-
-        public String getEmailId() {
-            return emailId;
-        }
-
-        public void setEmailId(String emailId) {
-            this.emailId = emailId;
-        }
-
-        public String getLocation() {
-            return location;
-        }
-
-        public void setLocation(String location) {
-            this.location = location;
-        }
-
-        public String getUrn() {
-            return urn;
-        }
-
-        public void setUrn(String urn) {
-            this.urn = urn;
-        }
-    }
-
-
-    static class LoginAccount {
-
-        private String name;
-        private String password;
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public String getPassword() {
-            return password;
-        }
-
-        public void setPassword(String password) {
-            this.password = password;
-        }
-    }
-
-
 }
