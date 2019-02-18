@@ -3,11 +3,13 @@ package com.whv.util;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.*;
 import com.whv.entity.LoginAccount;
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
+import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
@@ -27,7 +29,7 @@ public class ScheduleAppointment {
      * @return
      * @throws IOException
      */
-    public static HtmlPage submitFinalCalendar(HtmlPage afterSubmitApplicantList, WebClient webClient, String accountName) throws IOException {
+    public static HtmlPage submitFinalCalendar(HtmlPage afterSubmitApplicantList, WebClient webClient, String accountName, AtomicBoolean wait, String folder) throws Exception {
         HtmlPage afterSubmitCalendar = null;
         int month = 2;
         while (afterSubmitApplicantList != null) {
@@ -35,9 +37,11 @@ public class ScheduleAppointment {
                 HtmlSpan htmlSpan = (HtmlSpan) afterSubmitApplicantList.getByXPath("//td[@class='fc-header-right']/span").get(0);
                 afterSubmitApplicantList = htmlSpan.click();
             }
-            month++;
-            LOGGER.info(String.format("--------------  Loading dates for month [ %d ] successfully! -------------- ", month));
             List<HtmlTableDataCell> tds = afterSubmitApplicantList.getByXPath("//div[@class='fc-content']//tbody//td");
+
+            month++;
+            FileUtils.write(new File(folder + "/" + "Final_Calendar.html"), afterSubmitApplicantList.asXml(), "UTF-8");
+            LOGGER.info(String.format("--------------  Loading dates for month [ %d ] successfully! -------------- ", month));
             List<HtmlTableDataCell> availableList = tds.parallelStream().filter(td -> td.getAttribute("style").contains("background-color: rgb(188,237,145)")).collect(Collectors.toList());
             if (availableList == null || availableList.size() == 0) {
                 HtmlSpan htmlSpan = (HtmlSpan) afterSubmitApplicantList.getByXPath("//td[@class='fc-header-right']/span").get(0);
@@ -69,7 +73,8 @@ public class ScheduleAppointment {
         return afterSubmitCalendar;
     }
 
-    public static HtmlPage submitConfirmPage(HtmlPage afterSubmitCalendar, WebClient webClient, String accountName) throws IOException {
+    public static HtmlPage submitConfirmPage(HtmlPage afterSubmitCalendar, WebClient webClient, String accountName, String folder) throws IOException {
+        FileUtils.write(new File(folder + "/" + "Check.html"), afterSubmitCalendar.asXml(), "UTF-8");
         List<HtmlElement> checkBoxList = afterSubmitCalendar.getByXPath("//input[@type='checkbox']");
         if (checkBoxList == null || checkBoxList.size() == 0) {
             LOGGER.info(String.format("-------------- [ %s ] cannot find checkbox in confirm page! -------------- ", accountName));

@@ -19,6 +19,7 @@ import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -251,7 +252,7 @@ public class CrackWhvFromRegister {
 //
 //                    }
                     if (currentStep.get() == 7) {
-                        checkPage = ScheduleAppointment.submitFinalCalendar(currentResponse, webClient, loginAccount.getName());
+                        checkPage = ScheduleAppointment.submitFinalCalendar(currentResponse, webClient, loginAccount.getName(), new AtomicBoolean(false), folder);
                         FileUtils.write(new File(folder + "/" + "Confirm.html"), checkPage.asXml(), "UTF-8");
                         if (!checkIfReturnPageHasException(checkPage)) {
                             currentResponse = checkPage;
@@ -259,7 +260,7 @@ public class CrackWhvFromRegister {
                         }
                     }
                     if (currentStep.get() == 8) {
-                        checkPage = ScheduleAppointment.submitConfirmPage(currentResponse, webClient, loginAccount.getName());
+                        checkPage = ScheduleAppointment.submitConfirmPage(currentResponse, webClient, loginAccount.getName(), folder);
                         if (!checkIfReturnPageHasException(checkPage)) {
                             FileUtils.write(new File(folder + "/" + "Check.html"), checkPage.asXml(), "UTF-8");
                             currentResponse = checkPage;
@@ -289,7 +290,7 @@ public class CrackWhvFromRegister {
 
         FileUtils.writeLines(new File("./register_info_file.txt"), registerInfo.stream().map(accountWithRegister -> accountWithRegister.getName()
                 .concat(",").concat(accountWithRegister.getPassword())
-                .concat(",").concat(accountWithRegister.getUrn()))
+                .concat(",").concat(String.join("&", accountWithRegister.getUrn())))
                 .collect(Collectors.toList()));
     }
 
